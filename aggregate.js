@@ -1,19 +1,21 @@
-ReactiveAggregate = function (sub, collection, pipeline, options) {
-  var defaultOptions = {
+export const ReactiveAggregate = (sub, collection, pipeline, options) => {
+  const defaultOptions = {
+    aggregationOptions: {},
     observeSelector: {},
     observeOptions: {},
     clientCollection: collection._name
   };
   options = _.extend(defaultOptions, options);
 
-  var initializing = true;
+  let initializing = true;
   sub._ids = {};
   sub._iteration = 1;
 
-  function update() {
+  const update = async () => {
     if (initializing) return;
     // add and update documents on the client
-    collection.aggregate(pipeline).forEach(function (doc) {
+    const docs = await collection.rawCollection().aggregate(pipeline, options.aggregationOptions);
+    docs.forEach(doc => {
       if (!sub._ids[doc._id]) {
         sub.added(options.clientCollection, doc._id, doc);
       } else {
@@ -22,8 +24,8 @@ ReactiveAggregate = function (sub, collection, pipeline, options) {
       sub._ids[doc._id] = sub._iteration;
     });
     // remove documents not in the result anymore
-    _.forEach(sub._ids, function (v, k) {
-      if (v != sub._iteration) {
+    Object.keys(sub._ids).forEach((v, k) => {
+      if (v !== sub._iteration) {
         delete sub._ids[k];
         sub.removed(options.clientCollection, k);
       }
@@ -32,12 +34,12 @@ ReactiveAggregate = function (sub, collection, pipeline, options) {
   }
 
   // track any changes on the collection used for the aggregation
-  var query = collection.find(options.observeSelector, options.observeOptions);
-  var handle = query.observeChanges({
+  const query = collection.find(options.observeSelector, options.observeOptions);
+  const handle = query.observeChanges({
     added: update,
     changed: update,
     removed: update,
-    error: function (err) {
+    error(err) {
       throw err;
     }
   });
