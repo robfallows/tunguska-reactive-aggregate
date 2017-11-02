@@ -2,7 +2,7 @@ Package.describe({
   name: 'tunguska:reactive-aggregate',
   version: '1.0.0',
   summary: 'Reactively publish aggregations.',
-  git: 'https://github.com/tunguska/meteor-reactive-aggregate',
+  git: 'https://github.com/robfallows/tunguska-reactive-aggregate',
   documentation: 'README.md'
 });
 
