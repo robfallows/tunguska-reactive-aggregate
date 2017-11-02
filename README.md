@@ -1,4 +1,4 @@
-# meteor-reactive-aggregate
+# tunguska-reactive-aggregate
 
 Reactively publish aggregations.
 
