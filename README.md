@@ -32,7 +32,7 @@ Meteor.publish('nameOfPublication', function() {
   - `observeOptions` can be given to limit fields, further improving efficiency. Ideally used to limit fields on your query.
   If none are given any change to the collection will cause the aggregation to be re-evaluated.
   (e.g. `{ limit: 10, sort: { createdAt: -1 } }`)
-  - `clientCollection` defaults to the same name as the original collection, but can be overridden to send the results to a differentley named client-side collection.
+  - `clientCollection` defaults to the same name as the original collection, but can be overridden to send the results to a differently named client-side collection.
 
 ## Quick Example
 

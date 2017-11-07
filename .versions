@@ -33,7 +33,7 @@ random@1.0.10
 retry@1.0.9
 routepolicy@1.0.12
 tracker@1.1.3
-tunguska:reactive-aggregate@1.0.0
+tunguska:reactive-aggregate@1.0.1
 underscore@1.0.10
 webapp@1.4.0
 webapp-hashing@1.0.9
