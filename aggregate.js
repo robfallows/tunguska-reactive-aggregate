@@ -1,4 +1,5 @@
 export const ReactiveAggregate = (sub, collection, pipeline, options) => {
+  import { Promise } from 'meteor/promise';
   const defaultOptions = {
     aggregationOptions: {},
     observeSelector: {},
@@ -9,13 +10,13 @@ export const ReactiveAggregate = (sub, collection, pipeline, options) => {
 
   let initializing = true;
   sub._ids = {};
-  sub._iteration = 1;
+  sub._iteration = 0;
 
   const update = async () => {
     if (initializing) return;
     // add and update documents on the client
     try {
-      const docs = await collection.rawCollection().aggregate(pipeline, options.aggregationOptions);
+      const docs = await collection.rawCollection().aggregate(pipeline, options.aggregationOptions).toArray();
       docs.forEach(doc => {
         if (!sub._ids[doc._id]) {
           sub.added(options.clientCollection, doc._id, doc);
@@ -24,11 +25,12 @@ export const ReactiveAggregate = (sub, collection, pipeline, options) => {
         }
         sub._ids[doc._id] = sub._iteration;
       });
+
       // remove documents not in the result anymore
-      Object.keys(sub._ids).forEach((v, k) => {
-        if (v !== sub._iteration) {
-          delete sub._ids[k];
-          sub.removed(options.clientCollection, k);
+      Object.keys(sub._ids).forEach(id => {
+        if (sub._ids[id] !== sub._iteration) {
+          delete sub._ids[id];
+          sub.removed(options.clientCollection, id);
         }
       });
       sub._iteration++;
@@ -51,7 +53,7 @@ export const ReactiveAggregate = (sub, collection, pipeline, options) => {
   // these are skipped using the initializing flag
   initializing = false;
   // send an initial result set to the client
-  update();
+  Promise.await(update());
   // mark the subscription as ready
   sub.ready();
 
@@ -60,3 +62,4 @@ export const ReactiveAggregate = (sub, collection, pipeline, options) => {
     handle.stop();
   });
 };
+

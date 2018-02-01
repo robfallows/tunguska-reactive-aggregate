@@ -1,6 +1,6 @@
 Package.describe({
   name: 'tunguska:reactive-aggregate',
-  version: '1.0.2',
+  version: '1.0.3',
   summary: 'Reactively publish aggregations.',
   git: 'https://github.com/robfallows/tunguska-reactive-aggregate',
   documentation: 'README.md'
@@ -11,5 +11,6 @@ Package.onUse(function(api) {
   api.use('mongo');
   api.use('ecmascript');
   api.use('underscore');
+  api.use('promise');
   api.mainModule('aggregate.js', 'server');
 });
