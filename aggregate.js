@@ -18,12 +18,14 @@ export const ReactiveAggregate = (sub, collection, pipeline, options) => {
     try {
       const docs = await collection.rawCollection().aggregate(pipeline, options.aggregationOptions).toArray();
       docs.forEach(doc => {
-        if (!sub._ids[doc._id.toString()]) {
+        const newId = doc._id.toString();
+        console.log(newId);
+        if (!sub._ids[newId]) {
           sub.added(options.clientCollection, doc._id, doc);
         } else {
           sub.changed(options.clientCollection, doc._id, doc);
         }
-        sub._ids[doc._id.toString()] = sub._iteration;
+        sub._ids[newId] = sub._iteration;
       });
 
       // remove documents not in the result anymore
