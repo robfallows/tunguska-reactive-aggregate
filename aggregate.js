@@ -19,7 +19,6 @@ export const ReactiveAggregate = (sub, collection, pipeline, options) => {
       const docs = await collection.rawCollection().aggregate(pipeline, options.aggregationOptions).toArray();
       docs.forEach(doc => {
         const newId = doc._id.toString();
-        console.log(newId);
         if (!sub._ids[newId]) {
           sub.added(options.clientCollection, doc._id, doc);
         } else {
