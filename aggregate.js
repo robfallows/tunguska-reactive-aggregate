@@ -10,7 +10,7 @@ export const ReactiveAggregate = (sub, collection, pipeline, options) => {
 
   let initializing = true;
   sub._ids = {};
-  sub._iteration = 0;
+  sub._iteration = 1;
 
   const update = async () => {
     if (initializing) return;
