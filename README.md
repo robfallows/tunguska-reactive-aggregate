@@ -26,13 +26,17 @@ Meteor.publish('nameOfPublication', function() {
 - `collection` is the Mongo.Collection instance to query.
 - `pipeline` is the aggregation pipeline to execute.
 - `options` provides further options:
-  - `aggregationOptions` can be used to add further, aggregation-specific options. See [standard aggregation options](http://mongodb.github.io/node-mongodb-native/2.2/api/Collection.html#aggregate) for more information.
-  - `clientCollection` defaults to the same name as the original collection, but can be overridden to send the results to a differently named client-side collection.
-  - `observers`: An array of cursors. Each cursor is the result of a `Collection.find()`. Each of the supplied cursors will have an observer attached, so any change detected (and based on the selection criteria in the `find`) will re-run the aggregation pipeline.
-  - `debounceCount`: An integer representing the number of observer changes across all observers before the aggregation will be re-run. Defaults to 100.
-  - `debounceDelay`: An integer representing the maximum number of milli-seconds to wait for observer changes before the aggregation is re-run. Defaults to 100.
+  - `autoObserver`: Set to `false` to disable the automatic addition of an observer on the base collection. The default value is `true`, which provides backwards compatibility for the majority of aggregations. :hand: However, note that when the observer is automatically added it will make use of the deprecated options `observeSelector` and `observeOptions` (see below).
 
-  The following parameters are **deprecated** and will be removed in a later version. Both these parameters are now effectively absorbed into the `observers` option and if required should be added as a cursor (or another cursor) to the array of cursors in that.
+    The recommended approach is to set this option to `false` and ensure the required cursor is specified in the `observers` array.
+  
+  - `aggregationOptions` can be used to add further, aggregation-specific options. See [standard aggregation options](http://mongodb.github.io/node-mongodb-native/3.1/api/Collection.html#aggregate) for more information.
+  - `clientCollection` defaults to the same name as the original collection, but can be overridden to send the results to a differently named client-side collection.
+  - `observers`: An array of cursors. Each cursor is the result of a `Collection.find()`. Each of the supplied cursors will have an observer attached, so any change detected (based on the selection criteria in the `find`) will re-run the aggregation pipeline.
+  - `debounceCount`: An integer representing the number of observer changes across all observers before the aggregation will be re-run. Defaults to 100. Used in conjunction with `debounceDelay` to fine-tune reactivity.
+  - `debounceDelay`: An integer representing the maximum number of milli-seconds to wait for observer changes before the aggregation is re-run. Defaults to 100. Used in conjunction with `debounceCount` to fine-tune reactivity.
+
+  The following parameters are **deprecated** and will be removed in a later version. Both these parameters are now effectively absorbed into the `observers` option and if required should be added as a cursor (or another cursor) to the array of cursors in that. Setting either of these to anything other than the empty object `{}` will result in a deprecation notice to the server console.
   - ~~`observeSelector` can be given to improve efficiency. This selector is used for observing the collection.
   (e.g. `{ authorId: { $exists: 1 } }`)~~
   - ~~`observeOptions` can be given to limit fields, further improving efficiency. Ideally used to limit fields on your query.
@@ -122,13 +126,44 @@ Template.statsBrief.helpers({
 
 Finally, in your template:
 
-```hb
+```handlebars
 {{#each report in reportTotals}}
   <div>Total Hours: {{report.hours}}</div>
   <div>Total Books: {{report.books}}</div>
 {{/each}}
 ```
 
-Your aggregated values will therefore be available in client-side and behave reactively just as you'd expect.
+Your aggregated values will therefore be available in the client and behave reactively just as you'd expect.
+
+## Using `$lookup`
+
+The use of `$lookup` in an aggregation pipeline introduces the possibility that the aggregation pipeline will need to be run when any or all of the collections change.
+
+By default, only the base collection is observed for changes. However, it's possible to specify an arbitrary number of observers on disparate collections. In fact, it's possible to observe a collection which is not part of the aggregation pipeline to trigger a re-run of the aggregation. This introduces some interesting approaches towards optimising "heavy" pipelines on very active collections.
+
+```js
+Meteor.publish("biographiesByWelshAuthors", function () {
+  ReactiveAggregate(this, Authors, [{
+    $lookup: {
+      from: "books",
+      localField: "_id",
+      foreignField: "author_id",
+      as: "author_books"
+    }
+  }], {
+    autoObserver: false,
+    observers: [
+      Authors.find({ nationality: 'welsh'}),
+      Books.find({ category: 'biography' })
+    ]
+  });
+});
+```
+
+The aggregation will re-run whenever there is a change to the "welsh" authors in the `authors` collection or if there is a change to the biographies in the `books` collection.
+
+No `debounce` parameters have been specified, so any changes will only be made available to the client when the 100 changes have been seen across both collections, or after 100mS, whichever occurs first.
+
+---
 
 Enjoy aggregating `reactively`!
