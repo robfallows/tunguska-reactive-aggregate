@@ -72,7 +72,7 @@ export const ReactiveAggregate = (sub, collection, pipeline, options) => {
 
   const handles = [];
   // track any changes on the observed cursors
-  localOptions.obervers.forEach((query) => {
+  localOptions.observers.forEach((query) => {
     handles.push(query.observeChanges({
       added: debounce,
       changed: debounce,
