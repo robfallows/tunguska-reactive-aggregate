@@ -1,12 +1,19 @@
 export const ReactiveAggregate = (sub, collection, pipeline, options) => {
-  import { Promise } from 'meteor/promise';
+  import {
+    Promise
+  } from 'meteor/promise';
   const defaultOptions = {
     aggregationOptions: {},
     observeSelector: {},
     observeOptions: {},
+    observers: [], // cursor1, ... cursorn
+    debounceDelay: 100, // mS
+    debounceCount: 100,
     clientCollection: collection._name
   };
-  options = _.extend(defaultOptions, options);
+  const localOptions = _.extend(defaultOptions, options);
+
+  let currentDebounceCount = 0;
 
   let initializing = true;
   sub._ids = {};
@@ -39,12 +46,22 @@ export const ReactiveAggregate = (sub, collection, pipeline, options) => {
     }
   }
 
+  const debounce = () => {
+    if (initializing) return;
+    const timer = Meteor.setTimeout(update, options.debounceDelay);
+    if (currentDebounceCount++ > localOptions.debounceCount) {
+      currentDebounceCount = 0;
+      Meteor.cancelTimeout(timer);
+      update();
+    }
+  }
+
   // track any changes on the collection used for the aggregation
   const query = collection.find(options.observeSelector, options.observeOptions);
   const handle = query.observeChanges({
-    added: update,
-    changed: update,
-    removed: update,
+    added: debounce,
+    changed: debounce,
+    removed: debounce,
     error(err) {
       throw err;
     }
@@ -62,4 +79,3 @@ export const ReactiveAggregate = (sub, collection, pipeline, options) => {
     handle.stop();
   });
 };
-

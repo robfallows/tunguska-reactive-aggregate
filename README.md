@@ -6,11 +6,11 @@ Reactively publish aggregations.
 
 This helper can be used to reactively publish the results of an aggregation.
 
-Based on `jcbernack:reactive-aggregate`.
+Originally based on `jcbernack:reactive-aggregate`.
 
 This clone removes the dependency on `meteorhacks:reactive-aggregate` and instead uses the underlying MongoDB Nodejs library. In addition, it uses ES6/7 coding, including `async` and `await` and `import/export` syntax, so should be `import`ed into your (server) codebase where it's needed.
 
-In spite of those changes, the API is basically unchanged. I have added a new `aggregationOptions` object to the `options`, which may be used to pass in any of the [standard aggregation options](http://mongodb.github.io/node-mongodb-native/2.2/api/Collection.html#aggregate).
+In spite of those changes, the API is basically unchanged. However, there are a few additional properties of the `options` parameter. See the notes in the **Usage** section.
 
 ## Usage
 
@@ -27,12 +27,17 @@ Meteor.publish('nameOfPublication', function() {
 - `pipeline` is the aggregation pipeline to execute.
 - `options` provides further options:
   - `aggregationOptions` can be used to add further, aggregation-specific options. See [standard aggregation options](http://mongodb.github.io/node-mongodb-native/2.2/api/Collection.html#aggregate) for more information.
-  - `observeSelector` can be given to improve efficiency. This selector is used for observing the collection.
-  (e.g. `{ authorId: { $exists: 1 } }`)
-  - `observeOptions` can be given to limit fields, further improving efficiency. Ideally used to limit fields on your query.
-  If none are given any change to the collection will cause the aggregation to be re-evaluated.
-  (e.g. `{ limit: 10, sort: { createdAt: -1 } }`)
   - `clientCollection` defaults to the same name as the original collection, but can be overridden to send the results to a differently named client-side collection.
+  - `observers`: An array of cursors. Each cursor is the result of a `Collection.find()`. Each of the supplied cursors will have an observer attached, so any change detected (and based on the selection criteria in the `find`) will re-run the aggregation pipeline.
+  - `debounceCount`: An integer representing the number of observer changes across all observers before the aggregation will be re-run. Defaults to 100.
+  - `debounceDelay`: An integer representing the maximum number of milli-seconds to wait for observer changes before the aggregation is re-run. Defaults to 100.
+
+  The following parameters are **deprecated** and will be removed in a later version. Both these parameters are now effectively absorbed into the `observers` option and if required should be added as a cursor (or another cursor) to the array of cursors in that.
+  - ~~`observeSelector` can be given to improve efficiency. This selector is used for observing the collection.
+  (e.g. `{ authorId: { $exists: 1 } }`)~~
+  - ~~`observeOptions` can be given to limit fields, further improving efficiency. Ideally used to limit fields on your query.
+  If none are given any change to the collection will cause the aggregation to be re-evaluated.
+  (e.g. `{ limit: 10, sort: { createdAt: -1 } }`)~~
 
 ## Quick Example
 
