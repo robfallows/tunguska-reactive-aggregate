@@ -94,7 +94,7 @@ export const ReactiveAggregate = (sub, collection, pipeline, options) => {
   // stop observing the cursors when the client unsubscribes
   sub.onStop(function () {
     handles.forEach(handle => {
-      stop();
+      handle.stop();
     });
   });
 };
