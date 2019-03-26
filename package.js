@@ -10,7 +10,6 @@ Package.onUse(function(api) {
   api.versionsFrom('1.5');
   api.use('mongo');
   api.use('ecmascript');
-  api.use('underscore');
   api.use('promise');
   api.mainModule('aggregate.js', 'server');
 });

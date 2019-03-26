@@ -11,9 +11,7 @@ export const ReactiveAggregate = (sub, collection, pipeline, options) => {
     debounceCount: 100,
     clientCollection: collection._name
   };
-  const localOptions = _.extend(defaultOptions, options);
-
-  let currentDebounceCount = 0;
+  defaultOptions = { ...defaultOptions, ...options };
 
   let initializing = true;
   sub._ids = {};
@@ -46,12 +44,15 @@ export const ReactiveAggregate = (sub, collection, pipeline, options) => {
     }
   }
 
+  let currentDebounceCount = 0;
+  let timer;
+
   const debounce = () => {
     if (initializing) return;
-    const timer = Meteor.setTimeout(update, options.debounceDelay);
+    if (!timer) timer = Meteor.setTimeout(update, options.debounceDelay);
     if (currentDebounceCount++ > localOptions.debounceCount) {
       currentDebounceCount = 0;
-      Meteor.cancelTimeout(timer);
+      Meteor.clearTimeout(timer);
       update();
     }
   }
