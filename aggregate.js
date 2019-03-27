@@ -3,35 +3,80 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
   import { Mongo } from 'meteor/mongo';
   import { Promise } from 'meteor/promise';
 
-  if (collection !== null && collection !== instanceof Mongo.Collection) {
-    throw new Error('E-collection', 'tunguska:reactive-aggregate: collection must be null or a Mongo.Collection');
+  // Define new Meteor Error type
+  const TunguskaReactiveAggregateError = Meteor.makeErrorType('tunguska:reactive-aggregate', function(msg) {
+    this.message = `: ${msg}`;
+    this.path = '';
+    this.sanitizedError = new Meteor.Error('Error', msg.replace(/: .*$/, ''));
+  });
+
+  // Check inbound parameter types
+  if (collection !== null && !collection instanceof Mongo.Collection) {
+    throw new TunguskaReactiveAggregateError('collection must be a Mongo.Collection');
+  }
+  if (!pipeline instanceof Array) {
+    throw new TunguskaReactiveAggregateError('pipeline must be an array');
+  }
+  if (!options instanceof Object) {
+    throw new TunguskaReactiveAggregateError('options must be an object');
   }
 
-  if (pipeline !== instanceof Array) {
-    throw new Error('E-pipeline', 'tunguska:reactive-aggregate: pipeline must be an array');
-  }
-
-  if (options !== instanceof Object) {
-    throw new Error('E-options', 'tunguska:reactive-aggregate: options must be an object');
-  }
-
+  // Set up local options based on defaults and supplied options
   const localOptions = {
     ...{
+      noAutomaticObserver: true,
       aggregationOptions: {},
       observeSelector: {},
       observeOptions: {},
       observers: [], // cursor1, ... cursorn
-      debounceDelay: 100, // mS
       debounceCount: 100,
+      debounceDelay: 100, // mS
+      clientCollection: collection._name,
     },
     ...options
   };
 
-  localOptions.clientCollection = collection === null ? null : collection._name;
-  if (typeof localOptions.clientCollection !== 'string') {
-    throw new Error('E-clientCollection', 'tunguska:reactive-aggregate: options.clientCollection must be specified if collection is null');
+  // Check options
+  if (typeof localOptions.noAutomaticObserver !== 'boolean') {
+    throw new TunguskaReactiveAggregateError('options.noAutomaticObserver must be true or false');
   }
-
+  if (!options.observeSelector instanceof Object) {
+    throw new TunguskaReactiveAggregateError('deprecated options.observeSelector must be an object');
+  }
+  if (!options.observeOptions instanceof Object) {
+    throw new TunguskaReactiveAggregateError('deprecated options.observeOptions must be an object');
+  }
+  if (!options.observers instanceof Array) {
+    throw new TunguskaReactiveAggregateError('options.observers must be an array');
+  } else {
+    options.observers.forEach((cursor, i) => {
+      if (!cursor instanceof Mongo.Cursor) {
+        throw new TunguskaReactiveAggregateError(`options.observers[${i}] must be a cursor`);
+      }
+    });
+  }
+  if (!typeof options.debounceCount === 'number') {
+    throw new TunguskaReactiveAggregateError('options.debounceCount must be a positive integer');
+  } else {
+    options.debounceCount = parseInt(options.debounceCount, 10);
+    if (options.debounceCount < 0) {
+      throw new TunguskaReactiveAggregateError('options.debounceCount must be a positive integer');
+    }
+  }
+  if (!typeof options.debounceDelay === 'number') {
+    throw new TunguskaReactiveAggregateError('options.debounceDelay must be a positive integer');
+  } else {
+    options.debounceDelay = parseInt(options.debounceDelay, 10);
+    if (options.debounceDelay < 0) {
+      throw new TunguskaReactiveAggregateError('options.debounceDelay must be a positive integer');
+    }
+  }
+  if (typeof localOptions.clientCollection !== 'string') {
+    throw new TunguskaReactiveAggregateError('options.clientCollection must be a string');
+  }
+  
+  
+  // Warn about deprecated parameters if used
   if (Object.keys(localOptions.observeSelector).length != 0) console.log('tunguska:reactive-aggregate: observeSelector is deprecated');
   if (Object.keys(localOptions.observeOptions).length != 0) console.log('tunguska:reactive-aggregate: observeOptions is deprecated');
 
@@ -64,7 +109,7 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
       });
       sub._iteration++;
     } catch (err) {
-      throw new Error ('E-pub', `tunguska:reactive-aggregate: ${err.message}`);
+      throw new TunguskaReactiveAggregateError (err.message);
     }
   }
 
@@ -81,7 +126,7 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
     }
   }
 
-  if (collection !== null) {
+  if (!options.noAutomaticObserver) {
     const query = collection.find(localOptions.observeSelector, localOptions.observeOptions);
     localOptions.observers.push(query);
   }
@@ -94,7 +139,7 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
       changed: debounce,
       removed: debounce,
       error(err) {
-        throw err;
+        throw new TunguskaReactiveAggregateError (err.message);
       }
     }));
   });

@@ -23,9 +23,9 @@ Meteor.publish('nameOfPublication', function() {
 ```
 
 - `sub` should always be `this` in a publication.
-- `collection` is the Mongo.Collection instance to query, or `null`. Setting `collection` to `null` disables backwards compatibility, in which an observer is automatically added on the collection.
+- `collection` is the Mongo.Collection instance to query. To preserve backwards compatibility, an observer is automatically added on this collection, unless `options.noAutomaticObserver` is set to `true`.
 
-  The backwards-compatible, deprecated options `observeSelector` and `observeOptions` will continue to be honoured when `collection` is a `Mongo.Collection`, but the recommended approach is to use `null` and `options.observers`, which replaces the original method with something more versatile. There is no guarantee that deprecated options will continue to be honoured in future releases.
+  The backwards-compatible options `observeSelector` and `observeOptions` are now **deprecated**, but will continue to be honoured on an automatically added observer. However, the recommended approach is to set `options.noAutomaticObserver` to `true` and define your own oberver(s) in `options.observers`. There is no guarantee that deprecated options will continue to be honoured in future releases.
 
 - `pipeline` is the aggregation pipeline to execute.
 - `options` provides further options:
@@ -34,7 +34,8 @@ Meteor.publish('nameOfPublication', function() {
   
   - `aggregationOptions` can be used to add further, aggregation-specific options. See [standard aggregation options](http://mongodb.github.io/node-mongodb-native/3.1/api/Collection.html#aggregate) for more information.
   - `clientCollection` defaults to the same name as the original collection, but can be overridden to send the results to a differently named client-side collection.
-  - `observers`: An array of cursors. Each cursor is the result of a `Collection.find()`. Each of the supplied cursors will have an observer attached, so any change detected (based on the selection criteria in the `find`) will re-run the aggregation pipeline.
+  - `noAutomaticObserver`: set to `true` to prevent the backwards-compatible behaviour of an observer on the given collection.
+  `observers`: An array of cursors. Each cursor is the result of a `Collection.find()`. Each of the supplied cursors will have an observer attached, so any change detected (based on the selection criteria in the `find`) will re-run the aggregation pipeline.
   - `debounceCount`: An integer representing the number of observer changes across all observers before the aggregation will be re-run. Defaults to 100. Used in conjunction with `debounceDelay` to fine-tune reactivity.
   - `debounceDelay`: An integer representing the maximum number of milli-seconds to wait for observer changes before the aggregation is re-run. Defaults to 100. Used in conjunction with `debounceCount` to fine-tune reactivity.
 
@@ -81,7 +82,6 @@ Publish the aggregation on the server:
 
 ```js
 Meteor.publish("reportTotals", function() {
-  // Remember, ReactiveAggregate doesn't return anything
   ReactiveAggregate(this, Reports, [{
     // assuming our Reports collection have the fields: hours, books
     $group: {
@@ -145,7 +145,7 @@ By default, only the base collection is observed for changes. However, it's poss
 
 ```js
 Meteor.publish("biographiesByWelshAuthors", function () {
-  ReactiveAggregate(this, null, [{
+  ReactiveAggregate(this, Authors, [{
     $lookup: {
       from: "books",
       localField: "_id",
@@ -153,6 +153,7 @@ Meteor.publish("biographiesByWelshAuthors", function () {
       as: "author_books"
     }
   }], {
+    noAutomaticObserver: true,
     observers: [
       Authors.find({ nationality: 'welsh'}),
       Books.find({ category: 'biography' })
@@ -163,7 +164,52 @@ Meteor.publish("biographiesByWelshAuthors", function () {
 
 The aggregation will re-run whenever there is a change to the "welsh" authors in the `authors` collection or if there is a change to the biographies in the `books` collection.
 
-No `debounce` parameters have been specified, so any changes will only be made available to the client when the 100 changes have been seen across both collections, or after 100mS, whichever occurs first.
+No `debounce` parameters have been specified, so any changes will only be made available to the client when 100 changes have been seen across both collections, or after 100mS, whichever occurs first.
+
+## Non-Reactive Aggregations
+
+Like a Meteor Method, but the results come back in a Minimongo collection.
+
+```js
+Meteor.publish("biographiesByWelshAuthors", function () {
+  ReactiveAggregate(this, Authors, [{
+    $lookup: {
+      from: "books",
+      localField: "_id",
+      foreignField: "author_id",
+      as: "author_books"
+    }
+  }], {
+    noAutomaticObserver: true
+  });
+});
+```
+
+No observers were specified and no automatic observer was added, so the publication runs once only.
+
+## On-Demand Aggregations
+
+Also like a Meteor Method, but the results come back in a Minimongo collection and re-running of the aggregation can be triggered by observing an arbitrary, independent collection.
+
+```js
+Meteor.publish("biographiesByWelshAuthors", function () {
+  ReactiveAggregate(this, Authors, [{
+    $lookup: {
+      from: "books",
+      localField: "_id",
+      foreignField: "author_id",
+      as: "author_books"
+    }
+  }], {
+    noAutomaticObserver: true,
+    observers: [
+      Reruns.find({ _id: 'welshbiographies' })
+    ]
+  });
+});
+```
+
+By mutating the `Reruns` collection on a specific `_id` we cause the aggregation to re-run. The mutation could be done using a Meteor Method, or using Meteor's pub/sub.
 
 ---
 
