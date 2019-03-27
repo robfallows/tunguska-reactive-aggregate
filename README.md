@@ -23,10 +23,12 @@ Meteor.publish('nameOfPublication', function() {
 ```
 
 - `sub` should always be `this` in a publication.
-- `collection` is the Mongo.Collection instance to query.
+- `collection` is the Mongo.Collection instance to query, or `null`. Setting `collection` to `null` disables backwards compatibility, in which an observer is automatically added on the collection.
+
+  The backwards-compatible, deprecated options `observeSelector` and `observeOptions` will continue to be honoured when `collection` is a `Mongo.Collection`, but the recommended approach is to use `null` and `options.observers`, which replaces the original method with something more versatile. There is no guarantee that deprecated options will continue to be honoured in future releases.
+
 - `pipeline` is the aggregation pipeline to execute.
 - `options` provides further options:
-  - `autoObserver`: Set to `false` to disable the automatic addition of an observer on the base collection. The default value is `true`, which provides backwards compatibility for the majority of aggregations. :hand: However, note that when the observer is automatically added it will make use of the deprecated options `observeSelector` and `observeOptions` (see below).
 
     The recommended approach is to set this option to `false` and ensure the required cursor is specified in the `observers` array.
   
@@ -36,7 +38,7 @@ Meteor.publish('nameOfPublication', function() {
   - `debounceCount`: An integer representing the number of observer changes across all observers before the aggregation will be re-run. Defaults to 100. Used in conjunction with `debounceDelay` to fine-tune reactivity.
   - `debounceDelay`: An integer representing the maximum number of milli-seconds to wait for observer changes before the aggregation is re-run. Defaults to 100. Used in conjunction with `debounceCount` to fine-tune reactivity.
 
-  The following parameters are **deprecated** and will be removed in a later version. Both these parameters are now effectively absorbed into the `observers` option and if required should be added as a cursor (or another cursor) to the array of cursors in that. Setting either of these to anything other than the empty object `{}` will result in a deprecation notice to the server console.
+  :hand: The following parameters are **deprecated** and will be removed in a later version. Both these parameters are now effectively absorbed into the `observers` option and if required should be added as a cursor (or another cursor) to the array of cursors in that. Setting either of these to anything other than the empty object `{}` will result in a deprecation notice to the server console.
   - ~~`observeSelector` can be given to improve efficiency. This selector is used for observing the collection.
   (e.g. `{ authorId: { $exists: 1 } }`)~~
   - ~~`observeOptions` can be given to limit fields, further improving efficiency. Ideally used to limit fields on your query.
@@ -143,7 +145,7 @@ By default, only the base collection is observed for changes. However, it's poss
 
 ```js
 Meteor.publish("biographiesByWelshAuthors", function () {
-  ReactiveAggregate(this, Authors, [{
+  ReactiveAggregate(this, null, [{
     $lookup: {
       from: "books",
       localField: "_id",
@@ -151,7 +153,6 @@ Meteor.publish("biographiesByWelshAuthors", function () {
       as: "author_books"
     }
   }], {
-    autoObserver: false,
     observers: [
       Authors.find({ nationality: 'welsh'}),
       Books.find({ category: 'biography' })
