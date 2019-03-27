@@ -5,7 +5,7 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
 
   // Define new Meteor Error type
   const TunguskaReactiveAggregateError = Meteor.makeErrorType('tunguska:reactive-aggregate', function(msg) {
-    this.message = `: ${msg}`;
+    this.message = msg;
     this.path = '';
     this.sanitizedError = new Meteor.Error('Error', 'tunguska:reactive-aggregate');
   });
