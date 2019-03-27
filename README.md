@@ -8,9 +8,9 @@ This helper can be used to reactively publish the results of an aggregation.
 
 Originally based on `jcbernack:reactive-aggregate`.
 
-This clone removes the dependency on `meteorhacks:reactive-aggregate` and instead uses the underlying MongoDB Nodejs library. In addition, it uses ES6/7 coding, including `async` and `await` and `import/export` syntax, so should be `import`ed into your (server) codebase where it's needed.
+This clone removes the dependency on `meteorhacks:reactive-aggregate` and instead uses the underlying MongoDB Nodejs library. In addition, it uses ES6/7 coding, including Promises and `import/export` syntax, so should be `import`ed into your (server) codebase where it's needed.
 
-In spite of those changes, the API is basically unchanged. However, there are a few additional properties of the `options` parameter. See the notes in the **Usage** section.
+In spite of those changes, the API is basically unchanged and is backwards compatible, as far as I know. However, there are a few additional properties of the `options` parameter. See the notes in the **Usage** section.
 
 ## Usage
 
@@ -29,17 +29,14 @@ Meteor.publish('nameOfPublication', function() {
 
 - `pipeline` is the aggregation pipeline to execute.
 - `options` provides further options:
-
-    The recommended approach is to set this option to `false` and ensure the required cursor is specified in the `observers` array.
-  
   - `aggregationOptions` can be used to add further, aggregation-specific options. See [standard aggregation options](http://mongodb.github.io/node-mongodb-native/3.1/api/Collection.html#aggregate) for more information.
   - `clientCollection` defaults to the same name as the original collection, but can be overridden to send the results to a differently named client-side collection.
   - `noAutomaticObserver`: set to `true` to prevent the backwards-compatible behaviour of an observer on the given collection.
-  `observers`: An array of cursors. Each cursor is the result of a `Collection.find()`. Each of the supplied cursors will have an observer attached, so any change detected (based on the selection criteria in the `find`) will re-run the aggregation pipeline.
-  - `debounceCount`: An integer representing the number of observer changes across all observers before the aggregation will be re-run. Defaults to 100. Used in conjunction with `debounceDelay` to fine-tune reactivity.
-  - `debounceDelay`: An integer representing the maximum number of milli-seconds to wait for observer changes before the aggregation is re-run. Defaults to 100. Used in conjunction with `debounceCount` to fine-tune reactivity.
+  - `observers`: An array of cursors. Each cursor is the result of a `Collection.find()`. Each of the supplied cursors will have an observer attached, so any change detected (based on the selection criteria in the `find`) will re-run the aggregation pipeline.
+  - `debounceCount`: An integer representing the number of observer changes across all observers before the aggregation will be re-run. Defaults to 100. Used in conjunction with `debounceDelay` to fine-tune reactivity. The first of the two debounce options to be reached will re-run the aggregation.
+  - `debounceDelay`: An integer representing the maximum number of milli-seconds to wait for observer changes before the aggregation is re-run. Defaults to 100. Used in conjunction with `debounceCount` to fine-tune reactivity. The first of the two debounce options to be reached will re-run the aggregation.
 
-  :hand: The following parameters are **deprecated** and will be removed in a later version. Both these parameters are now effectively absorbed into the `observers` option and if required should be added as a cursor (or another cursor) to the array of cursors in that. Setting either of these to anything other than the empty object `{}` will result in a deprecation notice to the server console.
+  :hand: The following parameters are **deprecated** and will be removed in a later version. Both these parameters are now effectively absorbed into the `observers` option and if required should be replaced by adding a cursor (or cursors) to the array of cursors in `observers`. Setting either of these to anything other than the empty object `{}` will result in a deprecation notice to the server console.
   - ~~`observeSelector` can be given to improve efficiency. This selector is used for observing the collection.
   (e.g. `{ authorId: { $exists: 1 } }`)~~
   - ~~`observeOptions` can be given to limit fields, further improving efficiency. Ideally used to limit fields on your query.
@@ -139,9 +136,9 @@ Your aggregated values will therefore be available in the client and behave reac
 
 ## Using `$lookup`
 
-The use of `$lookup` in an aggregation pipeline introduces the possibility that the aggregation pipeline will need to be run when any or all of the collections change.
+The use of `$lookup` in an aggregation pipeline introduces the eventuality that the aggregation pipeline will need to re-run when any or all of the collections involved in the aggregation change.
 
-By default, only the base collection is observed for changes. However, it's possible to specify an arbitrary number of observers on disparate collections. In fact, it's possible to observe a collection which is not part of the aggregation pipeline to trigger a re-run of the aggregation. This introduces some interesting approaches towards optimising "heavy" pipelines on very active collections.
+By default, only the base collection is observed for changes. However, it's possible to specify an arbitrary number of observers on disparate collections. In fact, it's possible to observe a collection which is not part of the aggregation pipeline to trigger a re-run of the aggregation. This introduces some interesting approaches towards optimising "heavy" pipelines on very active collections (although perhaps you shouldn't be doing that in the first place).
 
 ```js
 Meteor.publish("biographiesByWelshAuthors", function () {
