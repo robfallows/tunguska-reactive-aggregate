@@ -50,7 +50,8 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
     throw new TunguskaReactiveAggregateError('options.observers must be an array');
   } else {
     localOptions.observers.forEach((cursor, i) => {
-      if (!(cursor instanceof Mongo.Collection.Cursor)) {
+      // The obvious "cursor instanceof Mongo.Cursor" doesn't seem to work
+      if (!(cursor._cursorDescription && cursor._cursorDescription.collectionName)) {
         throw new TunguskaReactiveAggregateError(`options.observers[${i}] must be a cursor`);
       }
     });
