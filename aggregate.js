@@ -7,17 +7,17 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
   const TunguskaReactiveAggregateError = Meteor.makeErrorType('tunguska:reactive-aggregate', function(msg) {
     this.message = `: ${msg}`;
     this.path = '';
-    this.sanitizedError = new Meteor.Error('Error', msg.replace(/: .*$/, ''));
+    this.sanitizedError = new Meteor.Error('Error', 'tunguska:reactive-aggregate');
   });
 
   // Check inbound parameter types
-  if (collection !== null && !collection instanceof Mongo.Collection) {
+  if (!(collection instanceof Mongo.Collection)) {
     throw new TunguskaReactiveAggregateError('collection must be a Mongo.Collection');
   }
-  if (!pipeline instanceof Array) {
+  if (!(pipeline instanceof Array)) {
     throw new TunguskaReactiveAggregateError('pipeline must be an array');
   }
-  if (!options instanceof Object) {
+  if (!(options instanceof Object)) {
     throw new TunguskaReactiveAggregateError('options must be an object');
   }
 
@@ -40,22 +40,22 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
   if (typeof localOptions.noAutomaticObserver !== 'boolean') {
     throw new TunguskaReactiveAggregateError('options.noAutomaticObserver must be true or false');
   }
-  if (!options.observeSelector instanceof Object) {
+  if (!(options.observeSelector instanceof Object)) {
     throw new TunguskaReactiveAggregateError('deprecated options.observeSelector must be an object');
   }
-  if (!options.observeOptions instanceof Object) {
+  if (!(options.observeOptions instanceof Object)) {
     throw new TunguskaReactiveAggregateError('deprecated options.observeOptions must be an object');
   }
-  if (!options.observers instanceof Array) {
+  if (!(options.observers instanceof Array)) {
     throw new TunguskaReactiveAggregateError('options.observers must be an array');
   } else {
     options.observers.forEach((cursor, i) => {
-      if (!cursor instanceof Mongo.Cursor) {
+      if (!(cursor instanceof Mongo.Cursor)) {
         throw new TunguskaReactiveAggregateError(`options.observers[${i}] must be a cursor`);
       }
     });
   }
-  if (!typeof options.debounceCount === 'number') {
+  if (!(typeof options.debounceCount === 'number')) {
     throw new TunguskaReactiveAggregateError('options.debounceCount must be a positive integer');
   } else {
     options.debounceCount = parseInt(options.debounceCount, 10);
@@ -63,7 +63,7 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
       throw new TunguskaReactiveAggregateError('options.debounceCount must be a positive integer');
     }
   }
-  if (!typeof options.debounceDelay === 'number') {
+  if (!(typeof options.debounceDelay === 'number')) {
     throw new TunguskaReactiveAggregateError('options.debounceDelay must be a positive integer');
   } else {
     options.debounceDelay = parseInt(options.debounceDelay, 10);
