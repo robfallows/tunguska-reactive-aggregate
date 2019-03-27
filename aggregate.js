@@ -40,10 +40,10 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
   if (typeof localOptions.noAutomaticObserver !== 'boolean') {
     throw new TunguskaReactiveAggregateError('options.noAutomaticObserver must be true or false');
   }
-  if (!(options.observeSelector instanceof Object)) {
+  if (typeof options.observeSelector !== 'object') {
     throw new TunguskaReactiveAggregateError('deprecated options.observeSelector must be an object');
   }
-  if (!(options.observeOptions instanceof Object)) {
+  if (typeof options.observeOptions !== 'object') {
     throw new TunguskaReactiveAggregateError('deprecated options.observeOptions must be an object');
   }
   if (!(options.observers instanceof Array)) {
