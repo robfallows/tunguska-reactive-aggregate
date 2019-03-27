@@ -47,10 +47,10 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
     throw new TunguskaReactiveAggregateError('deprecated options.observeOptions must be an object');
   }
   if (!(localOptions.observers instanceof Array)) {
-    throw new TunguskaReactiveAggregateError('options.observers must be an array');
+    throw new TunguskaReactiveAggregateError('options.observers must be an array of cursors');
   } else {
     localOptions.observers.forEach((cursor, i) => {
-      // The obvious "cursor instanceof Mongo.Cursor" doesn't seem to work
+      // The obvious "cursor instanceof Mongo.Cursor" doesn't seem to work, so...
       if (!(cursor._cursorDescription && cursor._cursorDescription.collectionName)) {
         throw new TunguskaReactiveAggregateError(`options.observers[${i}] must be a cursor`);
       }
@@ -81,17 +81,17 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
   if (Object.keys(localOptions.observeSelector).length != 0) console.log('tunguska:reactive-aggregate: observeSelector is deprecated');
   if (Object.keys(localOptions.observeOptions).length != 0) console.log('tunguska:reactive-aggregate: observeOptions is deprecated');
 
-  // observeChanges() will immediately fire an "added" event for each document in the query
+  // observeChanges() will immediately fire an "added" event for each document in the cursor
   // these are skipped using the initializing flag
   let initializing = true;
   sub._ids = {};
   sub._iteration = 1;
 
-  const update = async () => {
+  const update = () => {
     if (initializing) return;
     // add and update documents on the client
     try {
-      const docs = await collection.rawCollection().aggregate(pipeline, localOptions.aggregationOptions).toArray();
+      const docs = Promise.await(collection.rawCollection().aggregate(pipeline, localOptions.aggregationOptions).toArray());
       docs.forEach(doc => {
         if (!sub._ids[doc._id]) {
           sub.added(localOptions.clientCollection, doc._id, doc);
@@ -128,14 +128,14 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
   }
 
   if (!localOptions.noAutomaticObserver) {
-    const query = collection.find(localOptions.observeSelector, localOptions.observeOptions);
-    localOptions.observers.push(query);
+    const cursor = collection.find(localOptions.observeSelector, localOptions.observeOptions);
+    localOptions.observers.push(cursor);
   }
 
   const handles = [];
   // track any changes on the observed cursors
-  localOptions.observers.forEach((query) => {
-    handles.push(query.observeChanges({
+  localOptions.observers.forEach(cursor => {
+    handles.push(cursor.observeChanges({
       added: debounce,
       changed: debounce,
       removed: debounce,
@@ -149,7 +149,7 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
   // Clear the initializing flag. From here, we're on autopilot
   initializing = false;
   // send an initial result set to the client
-  Promise.await(update());
+  update();
   // mark the subscription as ready
   sub.ready();
 
