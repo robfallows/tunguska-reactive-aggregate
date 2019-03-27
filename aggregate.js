@@ -40,34 +40,34 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
   if (typeof localOptions.noAutomaticObserver !== 'boolean') {
     throw new TunguskaReactiveAggregateError('options.noAutomaticObserver must be true or false');
   }
-  if (typeof options.observeSelector !== 'object') {
+  if (typeof localOptions.observeSelector !== 'object') {
     throw new TunguskaReactiveAggregateError('deprecated options.observeSelector must be an object');
   }
-  if (typeof options.observeOptions !== 'object') {
+  if (typeof localOptions.observeOptions !== 'object') {
     throw new TunguskaReactiveAggregateError('deprecated options.observeOptions must be an object');
   }
-  if (!(options.observers instanceof Array)) {
+  if (!(localOptions.observers instanceof Array)) {
     throw new TunguskaReactiveAggregateError('options.observers must be an array');
   } else {
-    options.observers.forEach((cursor, i) => {
+    localOptions.observers.forEach((cursor, i) => {
       if (!(cursor instanceof Mongo.Cursor)) {
         throw new TunguskaReactiveAggregateError(`options.observers[${i}] must be a cursor`);
       }
     });
   }
-  if (!(typeof options.debounceCount === 'number')) {
+  if (!(typeof localOptions.debounceCount === 'number')) {
     throw new TunguskaReactiveAggregateError('options.debounceCount must be a positive integer');
   } else {
-    options.debounceCount = parseInt(options.debounceCount, 10);
-    if (options.debounceCount < 0) {
+    localOptions.debounceCount = parseInt(localOptions.debounceCount, 10);
+    if (localOptions.debounceCount < 0) {
       throw new TunguskaReactiveAggregateError('options.debounceCount must be a positive integer');
     }
   }
-  if (!(typeof options.debounceDelay === 'number')) {
+  if (!(typeof localOptions.debounceDelay === 'number')) {
     throw new TunguskaReactiveAggregateError('options.debounceDelay must be a positive integer');
   } else {
-    options.debounceDelay = parseInt(options.debounceDelay, 10);
-    if (options.debounceDelay < 0) {
+    localOptions.debounceDelay = parseInt(localOptions.debounceDelay, 10);
+    if (localOptions.debounceDelay < 0) {
       throw new TunguskaReactiveAggregateError('options.debounceDelay must be a positive integer');
     }
   }
@@ -126,7 +126,7 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
     }
   }
 
-  if (!options.noAutomaticObserver) {
+  if (!localOptions.noAutomaticObserver) {
     const query = collection.find(localOptions.observeSelector, localOptions.observeOptions);
     localOptions.observers.push(query);
   }
