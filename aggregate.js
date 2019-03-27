@@ -11,14 +11,17 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
   });
 
   // Check inbound parameter types
+  if (!(sub && sub.ready && sub.stop)) {
+    throw new TunguskaReactiveAggregateError('unexpected context - did you set "sub" to "this"?');
+  }
   if (!(collection instanceof Mongo.Collection)) {
-    throw new TunguskaReactiveAggregateError('collection must be a Mongo.Collection');
+    throw new TunguskaReactiveAggregateError('"collection" must be a Mongo.Collection');
   }
   if (!(pipeline instanceof Array)) {
-    throw new TunguskaReactiveAggregateError('pipeline must be an array');
+    throw new TunguskaReactiveAggregateError('"pipeline" must be an array');
   }
   if (!(options instanceof Object)) {
-    throw new TunguskaReactiveAggregateError('options must be an object');
+    throw new TunguskaReactiveAggregateError('"options" must be an object');
   }
 
   // Set up local options based on defaults and supplied options
@@ -38,42 +41,42 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
 
   // Check options
   if (typeof localOptions.noAutomaticObserver !== 'boolean') {
-    throw new TunguskaReactiveAggregateError('options.noAutomaticObserver must be true or false');
+    throw new TunguskaReactiveAggregateError('"options.noAutomaticObserver" must be true or false');
   }
   if (typeof localOptions.observeSelector !== 'object') {
-    throw new TunguskaReactiveAggregateError('deprecated options.observeSelector must be an object');
+    throw new TunguskaReactiveAggregateError('deprecated "options.observeSelector" must be an object');
   }
   if (typeof localOptions.observeOptions !== 'object') {
-    throw new TunguskaReactiveAggregateError('deprecated options.observeOptions must be an object');
+    throw new TunguskaReactiveAggregateError('deprecated "options.observeOptions" must be an object');
   }
   if (!(localOptions.observers instanceof Array)) {
-    throw new TunguskaReactiveAggregateError('options.observers must be an array of cursors');
+    throw new TunguskaReactiveAggregateError('"options.observers" must be an array of cursors');
   } else {
     localOptions.observers.forEach((cursor, i) => {
       // The obvious "cursor instanceof Mongo.Cursor" doesn't seem to work, so...
       if (!(cursor._cursorDescription && cursor._cursorDescription.collectionName)) {
-        throw new TunguskaReactiveAggregateError(`options.observers[${i}] must be a cursor`);
+        throw new TunguskaReactiveAggregateError(`"options.observers[${i}]" must be a cursor`);
       }
     });
   }
   if (!(typeof localOptions.debounceCount === 'number')) {
-    throw new TunguskaReactiveAggregateError('options.debounceCount must be a positive integer');
+    throw new TunguskaReactiveAggregateError('"options.debounceCount" must be a positive integer');
   } else {
     localOptions.debounceCount = parseInt(localOptions.debounceCount, 10);
     if (localOptions.debounceCount < 0) {
-      throw new TunguskaReactiveAggregateError('options.debounceCount must be a positive integer');
+      throw new TunguskaReactiveAggregateError('"options.debounceCount" must be a positive integer');
     }
   }
   if (!(typeof localOptions.debounceDelay === 'number')) {
-    throw new TunguskaReactiveAggregateError('options.debounceDelay must be a positive integer');
+    throw new TunguskaReactiveAggregateError('"options.debounceDelay" must be a positive integer');
   } else {
     localOptions.debounceDelay = parseInt(localOptions.debounceDelay, 10);
     if (localOptions.debounceDelay < 0) {
-      throw new TunguskaReactiveAggregateError('options.debounceDelay must be a positive integer');
+      throw new TunguskaReactiveAggregateError('"options.debounceDelay" must be a positive integer');
     }
   }
   if (typeof localOptions.clientCollection !== 'string') {
-    throw new TunguskaReactiveAggregateError('options.clientCollection must be a string');
+    throw new TunguskaReactiveAggregateError('"options.clientCollection" must be a string');
   }
   
   
@@ -144,7 +147,7 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
       }
     }));
   });
-  // End of the setup phase.
+  // End of the setup phase. We don't need to do any of that again!
   
   // Clear the initializing flag. From here, we're on autopilot
   initializing = false;
