@@ -210,4 +210,4 @@ By mutating the `Reruns` collection on a specific `_id` we cause the aggregation
 
 ---
 
-Enjoy aggregating `reactively`!
+Enjoy aggregating reactively, but use sparingly. Remember, with great reactivity comes great responsibility!
