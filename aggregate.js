@@ -27,13 +27,13 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
   // Set up local options based on defaults and supplied options
   const localOptions = {
     ...{
-      noAutomaticObserver: true,
+      noAutomaticObserver: false,
       aggregationOptions: {},
       observeSelector: {},
       observeOptions: {},
       observers: [], // cursor1, ... cursorn
-      debounceCount: 100,
-      debounceDelay: 100, // mS
+      debounceCount: 0,
+      debounceDelay: 0, // mS
       clientCollection: collection._name,
     },
     ...options
@@ -123,7 +123,7 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
   const debounce = () => {
     if (initializing) return;
     if (!timer && localOptions.debounceCount > 0) timer = Meteor.setTimeout(update, localOptions.debounceDelay);
-    if (currentDebounceCount++ > localOptions.debounceCount) {
+    if (++currentDebounceCount > localOptions.debounceCount) {
       currentDebounceCount = 0;
       Meteor.clearTimeout(timer);
       update();
