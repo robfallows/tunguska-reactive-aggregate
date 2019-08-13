@@ -81,8 +81,8 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
   
   
   // Warn about deprecated parameters if used
-  if (Object.keys(localOptions.observeSelector).length != 0) console.log('tunguska:reactive-aggregate: observeSelector is deprecated');
-  if (Object.keys(localOptions.observeOptions).length != 0) console.log('tunguska:reactive-aggregate: observeOptions is deprecated');
+  if (Object.keys(localOptions.observeSelector).length !== 0) console.log('tunguska:reactive-aggregate: observeSelector is deprecated');
+  if (Object.keys(localOptions.observeOptions).length !== 0) console.log('tunguska:reactive-aggregate: observeOptions is deprecated');
 
   // observeChanges() will immediately fire an "added" event for each document in the cursor
   // these are skipped using the initializing flag
@@ -147,6 +147,12 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
       }
     }));
   });
+
+  sub.onStop(() => {
+    handles.forEach(handle => {
+      handle.stop();
+    });
+  });
   // End of the setup phase. We don't need to do any of that again!
   
   // Clear the initializing flag. From here, we're on autopilot
@@ -157,9 +163,4 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
   sub.ready();
 
   // stop observing the cursors when the client unsubscribes
-  sub.onStop(function () {
-    handles.forEach(handle => {
-      handle.stop();
-    });
-  });
 };
