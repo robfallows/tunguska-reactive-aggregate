@@ -1,0 +1,34 @@
+# Change History
+
+## v1.2.0 2019-08-15
+
+- Fixes an issue in which MongoDb `ObjectId`s in the pipeline are apparently mutated into POJOs following `toArray()`. That mutation breaks minimongo. The fix applied in the release is to check each document's primary `_id` type and cast the result to a string, if necessary (and possible). All minimongo client document `_id`s are then of type `String`. Exceptions will be thrown for documents emitted from the pipeline with no `_id` field, or having an `_id` field not of type `String`, `Object` or `ObjectId`.
+- Adds History.md (this file) for visibility of changes over time.
+
+## v1.1.0 2019-06-26
+
+- Deprecates `observeSelector` and `observeOptions`.
+- Adds more error checking.
+- Adds new options for:
+  - `observers` - a list of observers across 0-n collections.
+  - `noAutomaticObserver` - allows the disabling of the addition of an automatic observer on the primary collection.
+  - `debounceCount` and `debounceDelay` - throttling controls for very active aggregation re-runs.
+
+## v1.0.3 2018-02-01
+
+- Fix for aggregation cursor not returning a Promise.
+
+## v1.0.2 2017-11-07
+
+- Changes to README.md.
+
+## v1.0.1 2017-11-02
+
+- Changes to README.md.
+- Add some error handling.
+
+## v1.0.0 2017-11-02
+
+- Initial release:
+  - Removes dependency on `meteorhacks:reactive-aggregate`.
+  - Refactored for Promises and ES6/7 syntax.

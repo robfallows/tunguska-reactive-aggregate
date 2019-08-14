@@ -78,11 +78,11 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
   if (typeof localOptions.clientCollection !== 'string') {
     throw new TunguskaReactiveAggregateError('"options.clientCollection" must be a string');
   }
-  
-  
+
+
   // Warn about deprecated parameters if used
-  if (Object.keys(localOptions.observeSelector).length != 0) console.log('tunguska:reactive-aggregate: observeSelector is deprecated');
-  if (Object.keys(localOptions.observeOptions).length != 0) console.log('tunguska:reactive-aggregate: observeOptions is deprecated');
+  if (Object.keys(localOptions.observeSelector).length !== 0) console.log('tunguska:reactive-aggregate: observeSelector is deprecated');
+  if (Object.keys(localOptions.observeOptions).length !== 0) console.log('tunguska:reactive-aggregate: observeOptions is deprecated');
 
   // observeChanges() will immediately fire an "added" event for each document in the cursor
   // these are skipped using the initializing flag
@@ -96,6 +96,26 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
     try {
       const docs = Promise.await(collection.rawCollection().aggregate(pipeline, localOptions.aggregationOptions).toArray());
       docs.forEach(doc => {
+
+        /*  _ids are complicated:
+            For tracking here, they must be String
+            For minimongo, they must exist and be
+              String or ObjectId
+              (however, we'll arbitrarily exclude ObjectId)
+            _ids coming from an aggregation pipeline may be anything or nothing!
+          ObjectIds coming via toArray() become POJOs
+        */
+
+        if (!doc._id) { // missing or otherwise falsy
+          throw new TunguskaReactiveAggregateError('every aggregation document must have an _id');
+        } else if (doc._id instanceof Mongo.ObjectID) {
+          doc._id = doc._id.toHexString();
+        } else if (typeof doc._id === 'object') {
+          doc._id = doc._id.toString();
+        } else if (typeof doc._id !== 'string') {
+          throw new TunguskaReactiveAggregateError('aggregation document _id is not an allowed type');
+        }
+
         if (!sub._ids[doc._id]) {
           sub.added(localOptions.clientCollection, doc._id, doc);
         } else {
@@ -147,8 +167,15 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
       }
     }));
   });
+
+  // stop observing the cursors when the client unsubscribes
+  sub.onStop(() => {
+    handles.forEach(handle => {
+      handle.stop();
+    });
+  });
   // End of the setup phase. We don't need to do any of that again!
-  
+
   // Clear the initializing flag. From here, we're on autopilot
   initializing = false;
   // send an initial result set to the client
@@ -156,10 +183,4 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
   // mark the subscription as ready
   sub.ready();
 
-  // stop observing the cursors when the client unsubscribes
-  sub.onStop(function () {
-    handles.forEach(handle => {
-      handle.stop();
-    });
-  });
 };
