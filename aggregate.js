@@ -109,9 +109,9 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
         if (!doc._id) { // missing or otherwise falsy
           throw new TunguskaReactiveAggregateError('every aggregation document must have an _id');
         } else if (doc._id instanceof Mongo.ObjectID) {
-          doc._id = doc_id.toHexString();
+          doc._id = doc._id.toHexString();
         } else if (typeof doc._id === 'object') {
-          doc._id = doc_id.toString();
+          doc._id = doc._id.toString();
         } else if (typeof doc._id !== 'string') {
           throw new TunguskaReactiveAggregateError('aggregation document _id is not an allowed type');
         }
