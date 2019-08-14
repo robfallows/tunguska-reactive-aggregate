@@ -184,7 +184,7 @@ Meteor.publish("biographiesByWelshAuthors", function () {
 });
 ```
 
-No observers were specified and no automatic observer was added, so the publication runs once only.
+No observers were specified and `noAutomaticObserver` was enabled, so the publication runs once only.
 
 ## On-Demand Aggregations
 
