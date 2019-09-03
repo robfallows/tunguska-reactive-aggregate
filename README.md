@@ -163,7 +163,7 @@ Meteor.publish("biographiesByWelshAuthors", function () {
 
 The aggregation will re-run whenever there is a change to the "welsh" authors in the `authors` collection or if there is a change to the biographies in the `books` collection.
 
-The `debounce` parameters were been specified, so any changes will only be made available to the client when 100 changes have been seen across both collections (in total), or after 100ms, whichever occurs first.
+The `debounce` parameters were specified, so any changes will only be made available to the client when 100 changes have been seen across both collections (in total), or after 100ms, whichever occurs first.
 
 ## Non-Reactive Aggregations
 
@@ -184,7 +184,7 @@ Meteor.publish("biographiesByWelshAuthors", function () {
 });
 ```
 
-No observers were specified and no automatic observer was added, so the publication runs once only.
+No observers were specified and `noAutomaticObserver` was enabled, so the publication runs once only.
 
 ## On-Demand Aggregations
 
