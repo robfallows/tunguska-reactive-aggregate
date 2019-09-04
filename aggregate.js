@@ -174,8 +174,8 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
   const handles = [];
   // track any changes on the observed cursors
   localOptions.observers.forEach(cursor => {
-    const name = cursor.collection.name;
-    if (debug) console.log(`Reactive-Aggregate: collection: ${name}: initialise observer`)
+    const name = cursor._cursorDescription.collectionName;
+    if (options.debug) console.log(`Reactive-Aggregate: collection: ${name}: initialise observer`)
     handles.push(cursor.observeChanges({
       added() {
         debounce({ name, mutation: 'added' } );
