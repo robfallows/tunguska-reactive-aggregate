@@ -155,8 +155,8 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
   let timer;
 
   const debounce = (notification) => {
+    if (initializing) return;
     if (localOptions.debug) console.log(`Reactive-Aggregate: collection: ${notification.name}: observer: ${notification.mutation}`)
-    // if (initializing) return;
     if (!timer && localOptions.debounceCount > 0) timer = Meteor.setTimeout(update, localOptions.debounceDelay);
     if (++currentDebounceCount > localOptions.debounceCount) {
       currentDebounceCount = 0;
