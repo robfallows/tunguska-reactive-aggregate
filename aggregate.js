@@ -96,9 +96,9 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
 
   const update = () => {
     if (initializing) {
-      if (typeof options.debug === 'function') {
+      if (typeof localOptions.debug === 'function') {
         const explain = Promise.await(collection.rawCollection().aggregate(pipeline, localOptions.aggregationOptions).explain());
-        options.debug(explain);
+        localOptions.debug(explain);
       }
       return;
     }
@@ -155,7 +155,7 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
   let timer;
 
   const debounce = (notification) => {
-    if (debug) console.log(`Reactive-Aggregate: collection: ${notification.name}: observer: ${notification.mutation}`)
+    if (localOptions.debug) console.log(`Reactive-Aggregate: collection: ${notification.name}: observer: ${notification.mutation}`)
     if (initializing) return;
     if (!timer && localOptions.debounceCount > 0) timer = Meteor.setTimeout(update, localOptions.debounceDelay);
     if (++currentDebounceCount > localOptions.debounceCount) {
@@ -175,7 +175,7 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
   // track any changes on the observed cursors
   localOptions.observers.forEach(cursor => {
     const name = cursor._cursorDescription.collectionName;
-    if (options.debug) console.log(`Reactive-Aggregate: collection: ${name}: initialise observer`)
+    if (localOptions.debug) console.log(`Reactive-Aggregate: collection: ${name}: initialise observer`)
     handles.push(cursor.observeChanges({
       added() {
         debounce({ name, mutation: 'added' } );
@@ -194,7 +194,7 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
 
   // stop observing the cursors when the client unsubscribes
   sub.onStop(() => {
-    if (debug) console.log(`Reactive-Aggregate: stopping observers`)
+    if (options.debug) console.log(`Reactive-Aggregate: stopping observers`)
     handles.forEach(handle => {
       handle.stop();
     });
