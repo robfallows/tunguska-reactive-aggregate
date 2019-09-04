@@ -162,6 +162,7 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
       currentDebounceCount = 0;
       Meteor.clearTimeout(timer);
       update();
+      if (localOptions.debug) console.log(`Reactive-Aggregate: collection: ${notification.name}: observer: ready`)
       sub.ready();           // Mark the subscription as ready
     }
   }
