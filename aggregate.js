@@ -95,7 +95,13 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
   sub._iteration = 1;
 
   const update = () => {
-    if (initializing) return;
+    if (initializing) {
+      if (typeof options.debug === 'function') {
+        const explain = Promise.await(collection.rawCollection().aggregate(pipeline, localOptions.aggregationOptions).explain());
+        options.debug(explain);
+      }
+      return;
+    }
     // add and update documents on the client
     try {
       const docs = Promise.await(collection.rawCollection().aggregate(pipeline, localOptions.aggregationOptions).toArray());
@@ -169,6 +175,7 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
   // track any changes on the observed cursors
   localOptions.observers.forEach(cursor => {
     const name = cursor.collection.name;
+    if (debug) console.log(`Reactive-Aggregate: collection: ${name}: initialise observer`)
     handles.push(cursor.observeChanges({
       added() {
         debounce({ name, mutation: 'added' } );
