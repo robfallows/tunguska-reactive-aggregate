@@ -95,13 +95,6 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
   sub._iteration = 1;
 
   const update = () => {
-    if (initializing) {
-      if (typeof localOptions.debug === 'function') {
-        const explain = Promise.await(collection.rawCollection().aggregate(pipeline, localOptions.aggregationOptions).explain());
-        localOptions.debug(explain);
-      }
-      return;
-    }
     // add and update documents on the client
     try {
       const docs = Promise.await(collection.rawCollection().aggregate(pipeline, localOptions.aggregationOptions).toArray());
@@ -157,7 +150,7 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
 
   const debounce = (notification) => {
     if (initializing) return;
-    if (localOptions.debug) console.log(`Reactive-Aggregate: collection: ${notification.name}: observer: ${notification.mutation}`)
+    if (localOptions.debug) console.log(`Reactive-Aggregate: collection: ${notification.name}: observer: ${notification.mutation}, _id: ${notification.id}`)
     if (!timer && localOptions.debounceCount > 0) timer = Meteor.setTimeout(update, localOptions.debounceDelay);
     if (++currentDebounceCount > localOptions.debounceCount) {
       currentDebounceCount = 0;
@@ -178,14 +171,14 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
     const name = cursor._cursorDescription.collectionName;
     if (localOptions.debug) console.log(`Reactive-Aggregate: collection: ${name}: initialise observer`)
     handles.push(cursor.observeChanges({
-      added() {
-        debounce({ name, mutation: 'added' } );
+      added(id) {
+        debounce({ name, mutation: 'added', id } );
       },
-      changed() {
-        debounce({ name, mutation: 'changed' });
+      changed(id) {
+        debounce({ name, mutation: 'changed', id });
       },
-      removed() {
-        debounce({ name, mutation: 'removed' });
+      removed(id) {
+        debounce({ name, mutation: 'removed', id });
       },
       error(err) {
         throw new TunguskaReactiveAggregateError (err.message);
@@ -202,6 +195,10 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
   });
   // End of the setup phase. We don't need to do any of that again!
 
+  if (typeof localOptions.debug === 'function') {
+    const explain = Promise.await(collection.rawCollection().aggregate(pipeline, localOptions.aggregationOptions).explain());
+    localOptions.debug(explain);
+  }
 
   initializing = false;  // Clear the initializing flag. From here, we're on autopilot
   update();              // Send an initial result set to the client
