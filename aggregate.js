@@ -146,6 +146,7 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
         }
       });
       sub._iteration++;
+      sub.ready();           // Mark the subscription as ready
     } catch (err) {
       throw new TunguskaReactiveAggregateError (err.message);
     }
@@ -163,7 +164,6 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
       Meteor.clearTimeout(timer);
       update();
       if (localOptions.debug) console.log(`Reactive-Aggregate: collection: ${notification.name}: observer: ready`)
-      sub.ready();           // Mark the subscription as ready
     }
   }
 
