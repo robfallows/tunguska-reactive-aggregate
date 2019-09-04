@@ -139,6 +139,7 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
         }
       });
       sub._iteration++;
+      if (localOptions.debug) console.log(`Reactive-Aggregate: publish: ready`)
       sub.ready();           // Mark the subscription as ready
     } catch (err) {
       throw new TunguskaReactiveAggregateError (err.message);
@@ -150,13 +151,12 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
 
   const debounce = (notification) => {
     if (initializing) return;
-    if (localOptions.debug) console.log(`Reactive-Aggregate: collection: ${notification.name}: observer: ${notification.mutation}, _id: ${notification.id}`)
+    if (localOptions.debug) console.log(`Reactive-Aggregate: collection: ${notification.name}: publish: ${notification.mutation}, _id: ${notification.id}`)
     if (!timer && localOptions.debounceCount > 0) timer = Meteor.setTimeout(update, localOptions.debounceDelay);
     if (++currentDebounceCount > localOptions.debounceCount) {
       currentDebounceCount = 0;
       Meteor.clearTimeout(timer);
       update();
-      if (localOptions.debug) console.log(`Reactive-Aggregate: collection: ${notification.name}: observer: ready`)
     }
   }
 
