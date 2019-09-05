@@ -1,5 +1,10 @@
 # Change History
 
+## v1.2.1 2019-09-05
+
+- Fixes an issue which delays the marking as `ready` of the publication.
+- Adds a new option: `debug`, which provides basic console logging of the main stages and an initial insight into MongoDB's `explain` for the aggregation.
+
 ## v1.2.0 2019-08-15
 
 - Fixes an issue in which MongoDb `ObjectId`s in the pipeline are apparently mutated into POJOs following `toArray()`. That mutation breaks minimongo. The fix applied in the release is to check each document's primary `_id` type and cast the result to a string, if necessary (and possible). All minimongo client document `_id`s are then of type `String`. Exceptions will be thrown for documents emitted from the pipeline with no `_id` field, or having an `_id` field not of type `String`, `Object` or `ObjectId`.

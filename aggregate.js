@@ -35,6 +35,7 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
       debounceCount: 0,
       debounceDelay: 0, // mS
       clientCollection: collection._name,
+      debug: false,
     },
     ...options
   };
@@ -78,6 +79,9 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
   if (typeof localOptions.clientCollection !== 'string') {
     throw new TunguskaReactiveAggregateError('"options.clientCollection" must be a string');
   }
+  if (typeof localOptions.debug !== 'function' && localOptions.debug !== true && localOptions.debug !== false) {
+    throw new TunguskaReactiveAggregateError('"options.debug" must be a boolean or a callback');
+  }
 
 
   // Warn about deprecated parameters if used
@@ -91,7 +95,6 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
   sub._iteration = 1;
 
   const update = () => {
-    if (initializing) return;
     // add and update documents on the client
     try {
       const docs = Promise.await(collection.rawCollection().aggregate(pipeline, localOptions.aggregationOptions).toArray());
@@ -106,22 +109,26 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
           ObjectIds coming via toArray() become POJOs
         */
 
+        let doc_id;
         if (!doc._id) { // missing or otherwise falsy
           throw new TunguskaReactiveAggregateError('every aggregation document must have an _id');
         } else if (doc._id instanceof Mongo.ObjectID) {
-          doc._id = doc._id.toHexString();
+          doc_id = doc._id.toHexString();
         } else if (typeof doc._id === 'object') {
-          doc._id = doc._id.toString();
+          doc_id = doc._id.toString();
         } else if (typeof doc._id !== 'string') {
           throw new TunguskaReactiveAggregateError('aggregation document _id is not an allowed type');
+        } else {
+          doc_id = doc._id;
         }
 
-        if (!sub._ids[doc._id]) {
-          sub.added(localOptions.clientCollection, doc._id, doc);
+        // If we got here, doc_id must be a string
+        if (!sub._ids[doc_id]) {
+          sub.added(localOptions.clientCollection, doc_id, doc);
         } else {
-          sub.changed(localOptions.clientCollection, doc._id, doc);
+          sub.changed(localOptions.clientCollection, doc_id, doc);
         }
-        sub._ids[doc._id] = sub._iteration;
+        sub._ids[doc_id] = sub._iteration;
       });
 
       // remove documents not in the result anymore
@@ -132,6 +139,8 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
         }
       });
       sub._iteration++;
+      if (localOptions.debug) console.log(`Reactive-Aggregate: publish: ready`)
+      sub.ready();           // Mark the subscription as ready
     } catch (err) {
       throw new TunguskaReactiveAggregateError (err.message);
     }
@@ -140,8 +149,9 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
   let currentDebounceCount = 0;
   let timer;
 
-  const debounce = () => {
+  const debounce = (notification) => {
     if (initializing) return;
+    if (localOptions.debug) console.log(`Reactive-Aggregate: collection: ${notification.name}: publish: ${notification.mutation}, _id: ${notification.id}`)
     if (!timer && localOptions.debounceCount > 0) timer = Meteor.setTimeout(update, localOptions.debounceDelay);
     if (++currentDebounceCount > localOptions.debounceCount) {
       currentDebounceCount = 0;
@@ -158,10 +168,18 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
   const handles = [];
   // track any changes on the observed cursors
   localOptions.observers.forEach(cursor => {
+    const name = cursor._cursorDescription.collectionName;
+    if (localOptions.debug) console.log(`Reactive-Aggregate: collection: ${name}: initialise observer`)
     handles.push(cursor.observeChanges({
-      added: debounce,
-      changed: debounce,
-      removed: debounce,
+      added(id) {
+        debounce({ name, mutation: 'added', id } );
+      },
+      changed(id) {
+        debounce({ name, mutation: 'changed', id });
+      },
+      removed(id) {
+        debounce({ name, mutation: 'removed', id });
+      },
       error(err) {
         throw new TunguskaReactiveAggregateError (err.message);
       }
@@ -170,17 +188,19 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
 
   // stop observing the cursors when the client unsubscribes
   sub.onStop(() => {
+    if (options.debug) console.log(`Reactive-Aggregate: stopping observers`)
     handles.forEach(handle => {
       handle.stop();
     });
   });
   // End of the setup phase. We don't need to do any of that again!
 
-  // Clear the initializing flag. From here, we're on autopilot
-  initializing = false;
-  // send an initial result set to the client
-  update();
-  // mark the subscription as ready
-  sub.ready();
+  if (typeof localOptions.debug === 'function') {
+    const explain = Promise.await(collection.rawCollection().aggregate(pipeline, localOptions.aggregationOptions).explain());
+    localOptions.debug(explain);
+  }
+
+  initializing = false;  // Clear the initializing flag. From here, we're on autopilot
+  update();              // Send an initial result set to the client
 
 };
