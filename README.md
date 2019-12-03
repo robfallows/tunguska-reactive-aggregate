@@ -2,6 +2,8 @@
 
 Reactively publish aggregations.
 
+See [changelog](History.md).
+
 `meteor add tunguska:reactive-aggregate`
 
 This helper can be used to reactively publish the results of an aggregation.
@@ -11,6 +13,8 @@ Originally based on `jcbernack:reactive-aggregate`.
 This clone removes the dependency on `meteorhacks:reactive-aggregate` and instead uses the underlying MongoDB Nodejs library. In addition, it uses ES6/7 coding, including Promises and `import/export` syntax, so should be `import`ed into your (server) codebase where it's needed.
 
 In spite of those changes, the API is basically unchanged and is backwards compatible, as far as I know. However, there are a few additional properties of the `options` parameter. See the notes in the **Usage** section.
+
+Changed behaviour in v1.2.2: See <https://github.com/robfallows/tunguska-reactive-aggregate/issues/23> for more information.
 
 ## Usage
 
