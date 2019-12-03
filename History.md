@@ -1,5 +1,9 @@
 # Change History
 
+## v1.2.2 2019-12-03
+
+- Changes the way updates to docs with removed fields are handled. Kudos to @CyberCyclone.
+
 ## v1.2.1 2019-09-05
 
 - Fixes an issue which delays the marking as `ready` of the publication.
