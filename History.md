@@ -1,8 +1,12 @@
 # Change History
 
-## v1.2.2 2019-12-03
+## v1.2.3 2019-12-03
 
 - Changes the way updates to docs with removed fields are handled. Kudos to @CyberCyclone.
+
+## v1.2.2 2019-12-03
+
+- This version should not (cannot) be used. The `meteor publish` hung and never completed, leaving this version in an unclean state.
 
 ## v1.2.1 2019-09-05
 

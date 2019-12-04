@@ -14,7 +14,7 @@ This clone removes the dependency on `meteorhacks:reactive-aggregate` and instea
 
 In spite of those changes, the API is basically unchanged and is backwards compatible, as far as I know. However, there are a few additional properties of the `options` parameter. See the notes in the **Usage** section.
 
-Changed behaviour in v1.2.2: See <https://github.com/robfallows/tunguska-reactive-aggregate/issues/23> for more information.
+Changed behaviour in v1.2.3: See <https://github.com/robfallows/tunguska-reactive-aggregate/issues/23> for more information.
 
 ## Usage
 
