@@ -163,11 +163,19 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
   const debounce = (notification) => {
     if (initializing) return;
     if (localOptions.debug) console.log(`Reactive-Aggregate: collection: ${notification.name}: publish: ${notification.mutation}, _id: ${notification.id}`)
-    if (!timer && localOptions.debounceCount > 0) timer = Meteor.setTimeout(update, localOptions.debounceDelay);
-    if (++currentDebounceCount > localOptions.debounceCount) {
-      currentDebounceCount = 0;
-      Meteor.clearTimeout(timer);
+
+    if (!timer && localOptions.debounceDelay > 0) timer = Meteor.setTimeout(() => {
       update();
+      Meteor.clearTimeout(timer);
+      timer = undefined;
+      currentDebounceCount = 0;
+    }, localOptions.debounceDelay);
+
+    if (++currentDebounceCount >= localOptions.debounceCount) {
+      update();
+      Meteor.clearTimeout(timer);
+      timer = undefined;
+      currentDebounceCount = 0;
     }
   }
 
