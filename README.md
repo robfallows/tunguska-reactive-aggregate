@@ -8,6 +8,12 @@ See [changelog](History.md).
 
 This helper can be used to reactively publish the results of an aggregation.
 
+Versions 1.2.3 and prior did not require `simpl-schema` and `lodash`, but they are now required. (Only the `set` functionality of `lodash` is imported, if you're concerned about the full package bloating your code size). Install them in your project with:
+
+`meteor npm i simpl-schema`
+
+`meteor npm i lodash`
+
 Originally based on `jcbernack:reactive-aggregate`.
 
 This clone removes the dependency on `meteorhacks:reactive-aggregate` and instead uses the underlying MongoDB Nodejs library. In addition, it uses ES6/7 coding, including Promises and `import/export` syntax, so should be `import`ed into your (server) codebase where it's needed.
