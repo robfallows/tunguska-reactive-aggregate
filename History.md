@@ -1,6 +1,6 @@
 # Change History
 
-## v1.3 2020-03-09
+## v1.3.0 2020-03-09
 
 - Adds support for Mongo.ObjectId ids (previously supported string ids). PR from @RealHandy.
 
