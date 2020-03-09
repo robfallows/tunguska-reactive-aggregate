@@ -2,8 +2,26 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
   import { Meteor } from 'meteor/meteor';
   import { Mongo } from 'meteor/mongo';
   import { Promise } from 'meteor/promise';
-  import SimpleSchema from 'simpl-schema';
-  import set from 'lodash/set';
+
+  // Handle loading lodash/set and simpl-schema so that ReactiveAggregate
+  // will still work (without Mongo.ObjectID support) if they aren't loaded.
+  // Also, prefer lodash-es over lodash, but accept either.
+  const packageErrors = [];
+  let set = null, SimpleSchema = null;
+  try { set = require('lodash-es/set'); }
+  catch (e) {
+    try { set = require('lodash/set'); }
+    catch (e2) {
+      let eCombined = { code: `lodash-es(${e.code || e}), lodash(${e2.code || e2})` }; 
+      packageErrors.push({name:'lodash-es or lodash', error:eCombined});
+    } 
+  }
+  try { SimpleSchema = require('simpl-schema'); } catch (e) { packageErrors.push({name:'simpl-schema',error:e}); }
+  const isUsingMongoObjectIDSupport = packageErrors.length === 0;
+  if ( !isUsingMongoObjectIDSupport ) {
+    console.log(`ReactiveAggregate support for Mongo.ObjectID is disabled due to ${packageErrors.length} package error(s):`);
+    packageErrors.forEach( (e,i) => { console.log( `   ${i+1} - ${e.name}: ${e.error.code || e.error}`);});
+  }  
 
   // Define new Meteor Error type
   const TunguskaReactiveAggregateError = Meteor.makeErrorType('tunguska:reactive-aggregate', function(msg) {
@@ -104,7 +122,7 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
   // The caller can explicitly provide schema keys, but they have to get them exactly right
   // or they'll be debugging why things aren't working. In (hopefully) nearly all cases,
   // the code here will deduce which keys define ObjectIDs and automatically repair them.
-  if (localOptions.objectIDKeysToRepair.length === 0 ) {
+  if ( isUsingMongoObjectIDSupport && (localOptions.objectIDKeysToRepair.length === 0) ) {
     // Find the ObjectIDs to repair in the schema,
     // since it's not overridden by specified ones in the options.
     if ( schema instanceof SimpleSchema ) {

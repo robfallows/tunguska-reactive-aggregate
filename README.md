@@ -8,11 +8,16 @@ See [changelog](History.md).
 
 This helper can be used to reactively publish the results of an aggregation.
 
-Versions 1.2.3 and prior did not require `simpl-schema` and `lodash`, but they are now required. (Only the `set` functionality of `lodash` is imported, if you're concerned about the full package bloating your code size). Install them in your project with:
+>### Optional install packages for full Mongo.ObjectID support
+>You can skip this section if your collections use the Meteor default of String for MongoDB document ids.
+>If, however, you use the Mongo.ObjectID type for document ids, full support for handling Mongo.ObjectIDs is only enabled if `simpl-schema` and either `lodash-es` or `lodash` are installed. For backward compatibility, they are not required. (Only the `set` functionality of `lodash-es`/`lodash` is imported, if you're concerned about the full package bloating your code size).
+>You can install them in your project with:
 
-`meteor npm i simpl-schema`
+>`meteor npm i simpl-schema`
 
-`meteor npm i lodash`
+>`meteor npm i lodash-es` or `meteor npm i lodash`
+
+>Additionally, unless you have defined SimpleSchemas for your collections, you still won't have full support for handling Mongo.ObjectIDs. The `_id` field of your primary collection _will_ be handled properly without installing these packages and without having SimpleSchemas defined, but any embedded Mongo.ObjectID fields will _not_ be handled properly unless you set up full support with these packages and schema definitions. Defining SimpleSchemas is beyond the scope of this writeup, but you can learn about it at [simple-schema on GitHub](https://github.com/aldeed/simple-schema-js). If you're curious about why Mongo.ObjectIDs require special support at all, it's because in Meteor, aggregate must use the low-level MongoDB Nodejs library, which doesn't know the Mongo.ObjectID type and so performs conversions that break Mongo.ObjectIDs. That's what 'full support' here is working around.
 
 Originally based on `jcbernack:reactive-aggregate`.
 
