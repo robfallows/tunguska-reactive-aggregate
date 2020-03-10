@@ -1,5 +1,9 @@
 # Change History
 
+## v1.3.0 2020-03-09
+
+- Adds support for Mongo.ObjectId ids (previously supported string ids). PR from @RealHandy.
+
 ## v1.2.3 2019-12-03
 
 - Changes the way updates to docs with removed fields are handled. Kudos to @CyberCyclone.

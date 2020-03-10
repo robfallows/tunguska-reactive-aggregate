@@ -3,6 +3,26 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
   import { Mongo } from 'meteor/mongo';
   import { Promise } from 'meteor/promise';
 
+  // Handle loading lodash/set and simpl-schema so that ReactiveAggregate
+  // will still work (without Mongo.ObjectID support) if they aren't loaded.
+  // Also, prefer lodash-es over lodash, but accept either.
+  const packageErrors = [];
+  let set = null, SimpleSchema = null;
+  try { set = require('lodash-es/set'); }
+  catch (e) {
+    try { set = require('lodash/set'); }
+    catch (e2) {
+      let eCombined = { code: `lodash-es(${e.code || e}), lodash(${e2.code || e2})` }; 
+      packageErrors.push({name:'lodash-es or lodash', error:eCombined});
+    } 
+  }
+  try { SimpleSchema = require('simpl-schema'); } catch (e) { packageErrors.push({name:'simpl-schema',error:e}); }
+  const isUsingMongoObjectIDSupport = packageErrors.length === 0;
+  if ( !isUsingMongoObjectIDSupport ) {
+    console.log(`ReactiveAggregate support for Mongo.ObjectID is disabled due to ${packageErrors.length} package error(s):`);
+    packageErrors.forEach( (e,i) => { console.log( `   ${i+1} - ${e.name}: ${e.error.code || e.error}`);});
+  }  
+
   // Define new Meteor Error type
   const TunguskaReactiveAggregateError = Meteor.makeErrorType('tunguska:reactive-aggregate', function(msg) {
     this.message = msg;
@@ -36,6 +56,7 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
       debounceDelay: 0, // mS
       clientCollection: collection._name,
       debug: false,
+      objectIDKeysToRepair: []
     },
     ...options
   };
@@ -82,7 +103,9 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
   if (typeof localOptions.debug !== 'function' && localOptions.debug !== true && localOptions.debug !== false) {
     throw new TunguskaReactiveAggregateError('"options.debug" must be a boolean or a callback');
   }
-
+  if (!(localOptions.objectIDKeysToRepair instanceof Array)) {
+    throw new TunguskaReactiveAggregateError('"options.objectIDKeysToRepair" must be an array');
+  }
 
   // Warn about deprecated parameters if used
   if (Object.keys(localOptions.observeSelector).length !== 0) console.log('tunguska:reactive-aggregate: observeSelector is deprecated');
@@ -93,6 +116,45 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
   let initializing = true;
   sub._ids = {};
   sub._iteration = 1;
+  let schemaContext = null;
+  let schema = collection.schema;
+
+  // The caller can explicitly provide schema keys, but they have to get them exactly right
+  // or they'll be debugging why things aren't working. In (hopefully) nearly all cases,
+  // the code here will deduce which keys define ObjectIDs and automatically repair them.
+  if ( isUsingMongoObjectIDSupport && (localOptions.objectIDKeysToRepair.length === 0) ) {
+    // Find the ObjectIDs to repair in the schema,
+    // since it's not overridden by specified ones in the options.
+    if ( schema instanceof SimpleSchema ) {
+      schemaContext = schema.newContext();
+
+      let mergedSchema = schema.mergedSchema();
+      Object.entries(mergedSchema).forEach(([key, rawDef]) => {
+        let def = schema.getDefinition( key );
+        for ( let type of def.type ) { 
+          if ( type.type === Mongo.ObjectID ) {
+            localOptions.objectIDKeysToRepair.push( key );
+            break;
+          }
+        }
+      });
+    }
+  }
+
+  // Remove '_id' as an objectID to repair if present, since it's done anyway.
+  localOptions.objectIDKeysToRepair = localOptions.objectIDKeysToRepair.filter(field => field !== '_id');
+
+  // Use lodash set to mutate the doc by setting the dotted path key to the
+  // Mongo.ObjectID format of the object id's value.
+  const repairObjectID = ( doc, key, valueToRepair ) => {
+    if ( valueToRepair instanceof MongoInternals.NpmModule.ObjectID ) 
+      set( doc, key, new Mongo.ObjectID(valueToRepair.toString()) );
+    // This is the very specific case in which a Mongo.ObjectID has gotten run through
+    // some BSONifier twice -- converting it the first time to a MongoInternals.NpmModule.ObjectID
+    // and the second time from that to a POJO with the id being a Uint8Array.
+    else if ( valueToRepair && (typeof valueToRepair === 'object') && ( valueToRepair.id instanceof Uint8Array ) )
+      set( doc, key, new Mongo.ObjectID(Buffer.from(valueToRepair.id).toString("hex") ) );
+  }
 
   const update = () => {
     // add and update documents on the client
@@ -101,12 +163,12 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
       docs.forEach(doc => {
 
         /*  _ids are complicated:
-            For tracking here, they must be String
-            For minimongo, they must exist and be
-              String or ObjectId
-              (however, we'll arbitrarily exclude ObjectId)
+            For tracking here, track the string version of them
+            For minimongo, they must exist
+              and be String or ObjectId
+            rawCollection() methods (like aggregate) convert ObjectIds to
+              MongoInternals.NpmModule.ObjectIDs, so convert them back
             _ids coming from an aggregation pipeline may be anything or nothing!
-          ObjectIds coming via toArray() become POJOs
         */
 
         let doc_id;
@@ -114,7 +176,13 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
           throw new TunguskaReactiveAggregateError('every aggregation document must have an _id');
         } else if (doc._id instanceof Mongo.ObjectID) {
           doc_id = doc._id.toHexString();
+        } else if (doc._id instanceof MongoInternals.NpmModule.ObjectID) {
+          // This means it was an ObjectID that got converted by rawCollection() methods
+          // that use the underlying MongoDB driver, so convert it back.
+          doc_id = doc._id.toString();
+          doc._id = new Mongo.ObjectID( doc_id );
         } else if (typeof doc._id === 'object') {
+          // This is some other kind of object, so leave it as is.
           doc_id = doc._id.toString();
         } else if (typeof doc._id !== 'string') {
           throw new TunguskaReactiveAggregateError('aggregation document _id is not an allowed type');
@@ -122,9 +190,35 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
           doc_id = doc._id;
         }
 
+        // If there are keys that should contain Mongo.ObjectIDs, validate them,
+        // and if they fail validation because they are the wrong type of object id,
+        // repair them back to being Mongo.ObjectIDs.
+        if ( schemaContext && ( localOptions.objectIDKeysToRepair.length > 0 ) ) {
+          schemaContext.reset();
+          schemaContext.validate( doc, { keys: localOptions.objectIDKeysToRepair } );
+          let validationErrors = schemaContext.validationErrors();
+          validationErrors.forEach(error => {
+            // error.dataType at this point has been converted to a string, so we can't
+            // do a 100% positive confirmation that the expected type here was a
+            // Mongo.ObjectID. This leaves open the (unimportant?) possibility that 
+            // a schema def with a "one of" definition of either a Mongo.ObjectID or
+            // some other kind of ObjectID could cause this to repair the ObjectID
+            // more than once. But repairObjectID only repairs the specific types
+            // that a Mongo.ObjectID gets converted to, so some other unknown
+            // ObjectID type won't be repaired.
+            if ( ( error.type === SimpleSchema.ErrorTypes.EXPECTED_TYPE ) &&
+                 ( error.dataType === "ObjectID" ) ) {
+              // error.name is the dotted path key to the objectID field.
+              // Setting a dotted path element of an object requires code.
+              repairObjectID( doc, error.name, error.value );
+            }
+
+          });
+        }
+
         // If we got here, doc_id must be a string
         if (!sub._ids[doc_id]) {
-          sub.added(localOptions.clientCollection, doc_id, doc);
+          sub.added(localOptions.clientCollection, doc._id, doc);  
         } else {
           if (sub._session.collectionViews.documents instanceof Map) {
             // Since the pipeline fields might have been removed, we need to find the differences and define them as 'undefined' so the sub removes them.
@@ -137,7 +231,7 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
               }
             });
           }
-          sub.changed(localOptions.clientCollection, doc_id, doc);
+          sub.changed(localOptions.clientCollection, doc._id, doc);
         }
         sub._ids[doc_id] = sub._iteration;
       });
