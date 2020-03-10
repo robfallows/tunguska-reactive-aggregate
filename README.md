@@ -2,6 +2,8 @@
 
 Reactively publish aggregations.
 
+## History
+
 See [changelog](History.md).
 
 `meteor add tunguska:reactive-aggregate`
