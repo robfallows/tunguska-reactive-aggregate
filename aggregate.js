@@ -7,7 +7,7 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
   // will still work (without Mongo.ObjectID support) if they aren't loaded.
   // Also, prefer lodash-es over lodash, but accept either.
   const packageErrors = [];
-  let set = null, SimpleSchema = null;
+  let set = null, _CircDepPreventionSimpleSchema = null;
   try { set = require('lodash-es/set'); }
   catch (e) {
     try { set = require('lodash/set'); }
@@ -16,7 +16,7 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
       packageErrors.push({name:'lodash-es or lodash', error:eCombined});
     } 
   }
-  try { SimpleSchema = require('simpl-schema'); } catch (e) { packageErrors.push({name:'simpl-schema',error:e}); }
+  try { _CircDepPreventionSimpleSchema = require('simpl-schema'); } catch (e) { packageErrors.push({name:'simpl-schema',error:e}); }
   const isUsingMongoObjectIDSupport = packageErrors.length === 0;
   if ( !isUsingMongoObjectIDSupport ) {
     console.log(`ReactiveAggregate support for Mongo.ObjectID is disabled due to ${packageErrors.length} package error(s):`);
@@ -125,7 +125,7 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
   if ( isUsingMongoObjectIDSupport && (localOptions.objectIDKeysToRepair.length === 0) ) {
     // Find the ObjectIDs to repair in the schema,
     // since it's not overridden by specified ones in the options.
-    if ( schema instanceof SimpleSchema ) {
+    if ( schema instanceof _CircDepPreventionSimpleSchema.default ) {
       schemaContext = schema.newContext();
 
       let mergedSchema = schema.mergedSchema();
@@ -206,7 +206,7 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
             // more than once. But repairObjectID only repairs the specific types
             // that a Mongo.ObjectID gets converted to, so some other unknown
             // ObjectID type won't be repaired.
-            if ( ( error.type === SimpleSchema.ErrorTypes.EXPECTED_TYPE ) &&
+            if ( ( error.type === _CircDepPreventionSimpleSchema.default.ErrorTypes.EXPECTED_TYPE ) &&
                  ( error.dataType === "ObjectID" ) ) {
               // error.name is the dotted path key to the objectID field.
               // Setting a dotted path element of an object requires code.
