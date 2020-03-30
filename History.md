@@ -1,5 +1,9 @@
 # Change History
 
+## v1.3.1 2020-03-27
+
+- Addresses v1.3.0 issue #37 arising from circular require/import dependencies in user code. PR from @RealHandy.
+
 ## v1.3.0 2020-03-09
 
 - Adds support for Mongo.ObjectId ids (previously supported string ids). PR from @RealHandy.
