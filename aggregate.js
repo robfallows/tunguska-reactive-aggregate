@@ -1,3 +1,4 @@
+let _errorsDisplayedOnce = false;
 export const ReactiveAggregate = (sub, collection = null, pipeline = [], options = {}) => {
   import { Meteor } from 'meteor/meteor';
   import { Mongo } from 'meteor/mongo';
@@ -18,9 +19,10 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
   }
   try { _CircDepPreventionSimpleSchema = require('simpl-schema'); } catch (e) { packageErrors.push({name:'simpl-schema',error:e}); }
   const isUsingMongoObjectIDSupport = packageErrors.length === 0;
-  if ( !isUsingMongoObjectIDSupport ) {
+  if ( !isUsingMongoObjectIDSupport && !_errorsDisplayedOnce ) {
     console.log(`ReactiveAggregate support for Mongo.ObjectID is disabled due to ${packageErrors.length} package error(s):`);
     packageErrors.forEach( (e,i) => { console.log( `   ${i+1} - ${e.name}: ${e.error.code || e.error}`);});
+    _errorsDisplayedOnce = true;
   }  
 
   // Define new Meteor Error type
