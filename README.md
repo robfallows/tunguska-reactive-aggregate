@@ -2,6 +2,14 @@
 
 Reactively publish aggregations.
 
+Originally based on `jcbernack:reactive-aggregate`.
+
+This version removes the dependency on `meteorhacks:reactive-aggregate` and instead uses the underlying MongoDB Nodejs library. In addition, it uses ES6/7 coding, including Promises and `import/export` syntax, so should be `import`ed into your (server) codebase where it's needed.
+
+In spite of those changes, the API is basically unchanged and is backwards compatible, as far as I know. However, there are a few additional properties of the `options` parameter. See the notes in the **Usage** section.
+
+Changed behaviour in v1.2.3: See <https://github.com/robfallows/tunguska-reactive-aggregate/issues/23> for more information.
+
 ## History
 
 See [changelog](History.md).
@@ -10,24 +18,21 @@ See [changelog](History.md).
 
 This helper can be used to reactively publish the results of an aggregation.
 
->### Optional install packages for full Mongo.ObjectID support
->You can skip this section if your collections use the Meteor default of String for MongoDB document ids.
->If, however, you use the Mongo.ObjectID type for document ids, full support for handling Mongo.ObjectIDs is only enabled if `simpl-schema` and either `lodash-es` or `lodash` are installed. For backward compatibility, they are not required. (Only the `set` functionality of `lodash-es`/`lodash` is imported, if you're concerned about the full package bloating your code size).
->You can install them in your project with:
+## Mongo.ObjectID support
 
->`meteor npm i simpl-schema`
+You can skip this optional section if your collections use the Meteor default of String for MongoDB document ids.
 
->`meteor npm i lodash-es` or `meteor npm i lodash`
+However, if you use the Mongo.ObjectID type for document ids, full support for handling Mongo.ObjectIDs is only enabled if `simpl-schema` and either `lodash-es` or `lodash` are installed. For backward compatibility, they are not required. (Only the `set` functionality of `lodash-es`/`lodash` is imported, if you're concerned about the full package bloating your code size).
 
->Additionally, unless you have defined SimpleSchemas for your collections, you still won't have full support for handling Mongo.ObjectIDs. The `_id` field of your primary collection _will_ be handled properly without installing these packages and without having SimpleSchemas defined, but any embedded Mongo.ObjectID fields will _not_ be handled properly unless you set up full support with these packages and schema definitions. Defining SimpleSchemas is beyond the scope of this writeup, but you can learn about it at [simple-schema on GitHub](https://github.com/aldeed/simple-schema-js). If you're curious about why Mongo.ObjectIDs require special support at all, it's because in Meteor, aggregate must use the low-level MongoDB Nodejs library, which doesn't know the Mongo.ObjectID type and so performs conversions that break Mongo.ObjectIDs. That's what 'full support' here is working around.
+You can install them in your project with:
 
-Originally based on `jcbernack:reactive-aggregate`.
+`meteor npm i simpl-schema`
 
-This clone removes the dependency on `meteorhacks:reactive-aggregate` and instead uses the underlying MongoDB Nodejs library. In addition, it uses ES6/7 coding, including Promises and `import/export` syntax, so should be `import`ed into your (server) codebase where it's needed.
+`meteor npm i lodash-es` or `meteor npm i lodash`
 
-In spite of those changes, the API is basically unchanged and is backwards compatible, as far as I know. However, there are a few additional properties of the `options` parameter. See the notes in the **Usage** section.
+Additionally, unless you have defined SimpleSchemas for your collections, you still won't have full support for handling Mongo.ObjectIDs. The `_id` field of your primary collection _will_ be handled properly without installing these packages and without having SimpleSchemas defined, but any embedded Mongo.ObjectID fields will _not_ be handled properly unless you set up full support with these packages and schema definitions. Defining SimpleSchemas is beyond the scope of this writeup, but you can learn about it at [simple-schema on GitHub](https://github.com/aldeed/simple-schema-js).
 
-Changed behaviour in v1.2.3: See <https://github.com/robfallows/tunguska-reactive-aggregate/issues/23> for more information.
+If you're curious about why Mongo.ObjectIDs require special support at all, it's because in Meteor, aggregate must use the low-level MongoDB Nodejs library, which doesn't know the Mongo.ObjectID type and so performs conversions that break Mongo.ObjectIDs. That's what 'full support' here is working around.
 
 ## Usage
 
@@ -53,6 +58,7 @@ Meteor.publish('nameOfPublication', function() {
   - `debounceCount`: An integer representing the number of observer changes across all observers before the aggregation will be re-run. Defaults to 0 (do not count) for backwards compatibility with the original API. Used in conjunction with `debounceDelay` to fine-tune reactivity. The first of the two debounce options to be reached will re-run the aggregation.
   - `debounceDelay`: An integer representing the maximum number of milli-seconds to wait for observer changes before the aggregation is re-run. Defaults to 0 (do not wait) for backwards compatibility with the original API. Used in conjunction with `debounceCount` to fine-tune reactivity. The first of the two debounce options to be reached will re-run the aggregation.
   - `debug`: A boolean (`true` or `false`), or a callback function having one parameter which will return the `aggregate#cursor.explain()` result. Defaults to `false` (no debugging).
+  - `warnings`: A boolean (`true` or `false`) which controls the logging of warning messages. Defaults to `true` (warning messages are logged).
   - `objectIDKeysToRepair`: An array of SimpleSchema-style dotted path keys to fields of the schema that are Mongo.ObjectIDs. This _is not needed by default_ and _should not be used unless the default behavior of the code fails in some way_. If your schemas use Mongo.ObjectID or Mongo.Collection.ObjectID as the type for object ids, rather than the Meteor default strings, and the code does not automatically handle your object ids properly (which may happen in rare cases, based on your schemas), then you can specify schema keys here to tell the code that they are Mongo.ObjectIDs as an alternative way to get your schemas to aggregate and return properly typed object ids. For example, if your BlogPosts collection schema has a `parentID` key that contains the object id of a parent post, and it also has a `comments` field that is an array of objects, one field of which, `id`, is a Mongo.ObjectID of a comment document in another collection, then _if your aggregations don't return properly typed Mongo.ObjectIDs in those fields automatically_, you could try providing  ['parentID', 'comments.$.id']. But this is a last resort, and you should expect your aggregations to return Mongo.ObjectID values properly, including the `_id` of your primary collection. Defaults to `[]`.
 
   :hand: The following parameters are **deprecated** and will be removed in a later version. Both these parameters are now effectively absorbed into the `observers` option and if required should be replaced by adding a cursor (or cursors) to the array of cursors in `observers`. Setting either of these to anything other than the empty object `{}` will result in a deprecation notice to the server console (for example: `tunguska:reactive-aggregate: observeSelector is deprecated`).

@@ -4,27 +4,6 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
   import { Mongo } from 'meteor/mongo';
   import { Promise } from 'meteor/promise';
 
-  // Handle loading lodash/set and simpl-schema so that ReactiveAggregate
-  // will still work (without Mongo.ObjectID support) if they aren't loaded.
-  // Also, prefer lodash-es over lodash, but accept either.
-  const packageErrors = [];
-  let set = null, _CircDepPreventionSimpleSchema = null;
-  try { set = require('lodash-es/set'); }
-  catch (e) {
-    try { set = require('lodash/set'); }
-    catch (e2) {
-      let eCombined = { code: `lodash-es(${e.code || e}), lodash(${e2.code || e2})` }; 
-      packageErrors.push({name:'lodash-es or lodash', error:eCombined});
-    } 
-  }
-  try { _CircDepPreventionSimpleSchema = require('simpl-schema'); } catch (e) { packageErrors.push({name:'simpl-schema',error:e}); }
-  const isUsingMongoObjectIDSupport = packageErrors.length === 0;
-  if ( !isUsingMongoObjectIDSupport && !_errorsDisplayedOnce ) {
-    console.log(`ReactiveAggregate support for Mongo.ObjectID is disabled due to ${packageErrors.length} package error(s):`);
-    packageErrors.forEach( (e,i) => { console.log( `   ${i+1} - ${e.name}: ${e.error.code || e.error}`);});
-    _errorsDisplayedOnce = true;
-  }  
-
   // Define new Meteor Error type
   const TunguskaReactiveAggregateError = Meteor.makeErrorType('tunguska:reactive-aggregate', function(msg) {
     this.message = msg;
@@ -50,6 +29,7 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
   const localOptions = {
     ...{
       noAutomaticObserver: false,
+      warnings: true,
       aggregationOptions: {},
       observeSelector: {},
       observeOptions: {},
@@ -66,6 +46,9 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
   // Check options
   if (typeof localOptions.noAutomaticObserver !== 'boolean') {
     throw new TunguskaReactiveAggregateError('"options.noAutomaticObserver" must be true or false');
+  }
+  if (typeof localOptions.warnings !== 'boolean') {
+    throw new TunguskaReactiveAggregateError('"options.warnings" must be true or false');
   }
   if (typeof localOptions.observeSelector !== 'object') {
     throw new TunguskaReactiveAggregateError('deprecated "options.observeSelector" must be an object');
@@ -110,10 +93,35 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
   }
 
   // Warn about deprecated parameters if used
-  if (Object.keys(localOptions.observeSelector).length !== 0) console.log('tunguska:reactive-aggregate: observeSelector is deprecated');
-  if (Object.keys(localOptions.observeOptions).length !== 0) console.log('tunguska:reactive-aggregate: observeOptions is deprecated');
+  if (localOptions.warnings) {
+    if (Object.keys(localOptions.observeSelector).length !== 0) console.log('tunguska:reactive-aggregate: observeSelector is deprecated');
+    if (Object.keys(localOptions.observeOptions).length !== 0) console.log('tunguska:reactive-aggregate: observeOptions is deprecated');
+  }
 
-  // observeChanges() will immediately fire an "added" event for each document in the cursor
+  // Handle loading lodash/set and simpl-schema so that ReactiveAggregate
+  // will still work (without Mongo.ObjectID support) if they aren't loaded.
+  // Also, prefer lodash-es over lodash, but accept either.
+  const packageErrors = [];
+  let set = null, _CircDepPreventionSimpleSchema = null;
+  try { set = require('lodash-es/set'); }
+  catch (e) {
+    try { set = require('lodash/set'); }
+    catch (e2) {
+      let eCombined = { code: `lodash-es(${e.code || e}), lodash(${e2.code || e2})` };
+      packageErrors.push({name:'lodash-es or lodash', error:eCombined});
+    }
+  }
+  try { _CircDepPreventionSimpleSchema = require('simpl-schema'); } catch (e) { packageErrors.push({name:'simpl-schema',error:e}); }
+  const isUsingMongoObjectIDSupport = packageErrors.length === 0;
+  if ( !isUsingMongoObjectIDSupport && !_errorsDisplayedOnce ) {
+    if (localOptions.warnings) {
+      console.log(`ReactiveAggregate support for Mongo.ObjectID is disabled due to ${packageErrors.length} package error(s):`);
+      packageErrors.forEach( (e,i) => { console.log( `   ${i+1} - ${e.name}: ${e.error.code || e.error}`);});
+    }
+    _errorsDisplayedOnce = true;
+  }
+
+// observeChanges() will immediately fire an "added" event for each document in the cursor
   // these are skipped using the initializing flag
   let initializing = true;
   sub._ids = {};
@@ -133,7 +141,7 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
       let mergedSchema = schema.mergedSchema();
       Object.entries(mergedSchema).forEach(([key, rawDef]) => {
         let def = schema.getDefinition( key );
-        for ( let type of def.type ) { 
+        for ( let type of def.type ) {
           if ( type.type === Mongo.ObjectID ) {
             localOptions.objectIDKeysToRepair.push( key );
             break;
@@ -149,7 +157,7 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
   // Use lodash set to mutate the doc by setting the dotted path key to the
   // Mongo.ObjectID format of the object id's value.
   const repairObjectID = ( doc, key, valueToRepair ) => {
-    if ( valueToRepair instanceof MongoInternals.NpmModule.ObjectID ) 
+    if ( valueToRepair instanceof MongoInternals.NpmModule.ObjectID )
       set( doc, key, new Mongo.ObjectID(valueToRepair.toString()) );
     // This is the very specific case in which a Mongo.ObjectID has gotten run through
     // some BSONifier twice -- converting it the first time to a MongoInternals.NpmModule.ObjectID
@@ -202,7 +210,7 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
           validationErrors.forEach(error => {
             // error.dataType at this point has been converted to a string, so we can't
             // do a 100% positive confirmation that the expected type here was a
-            // Mongo.ObjectID. This leaves open the (unimportant?) possibility that 
+            // Mongo.ObjectID. This leaves open the (unimportant?) possibility that
             // a schema def with a "one of" definition of either a Mongo.ObjectID or
             // some other kind of ObjectID could cause this to repair the ObjectID
             // more than once. But repairObjectID only repairs the specific types
@@ -220,7 +228,7 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
 
         // If we got here, doc_id must be a string
         if (!sub._ids[doc_id]) {
-          sub.added(localOptions.clientCollection, doc._id, doc);  
+          sub.added(localOptions.clientCollection, doc._id, doc);
         } else {
           if (sub._session.collectionViews.documents instanceof Map) {
             // Since the pipeline fields might have been removed, we need to find the differences and define them as 'undefined' so the sub removes them.

@@ -1,5 +1,13 @@
 # Change History
 
+## v1.3.3 2020-09-02
+
+- Allow opt-out of dependency warnings with new `options.warnings` parameter.
+
+## v1.3.2 2020-04-27
+
+- Display dependency warnings only once.
+
 ## v1.3.1 2020-03-27
 
 - Addresses v1.3.0 issue #37 arising from circular require/import dependencies in user code. PR from @RealHandy.
