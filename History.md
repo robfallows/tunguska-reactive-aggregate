@@ -1,5 +1,9 @@
 # Change History
 
+## v1.3.4 2021-01-06
+
+- Allow capturing of pipeline output with new `options.pipelineCapture` parameter.
+
 ## v1.3.3 2020-09-02
 
 - Allow opt-out of dependency warnings with new `options.warnings` parameter.

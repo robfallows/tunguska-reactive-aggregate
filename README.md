@@ -6,7 +6,7 @@ Originally based on `jcbernack:reactive-aggregate`.
 
 This version removes the dependency on `meteorhacks:reactive-aggregate` and instead uses the underlying MongoDB Nodejs library. In addition, it uses ES6/7 coding, including Promises and `import/export` syntax, so should be `import`ed into your (server) codebase where it's needed.
 
-In spite of those changes, the API is basically unchanged and is backwards compatible, as far as I know. However, there are a few additional properties of the `options` parameter. See the notes in the **Usage** section.
+In spite of those changes, the API is basically unchanged and is backwards compatible, as far as I know. However, there are several additional properties of the `options` parameter. See the notes in the **Usage** section.
 
 Changed behaviour in v1.2.3: See <https://github.com/robfallows/tunguska-reactive-aggregate/issues/23> for more information.
 
@@ -40,26 +40,50 @@ If you're curious about why Mongo.ObjectIDs require special support at all, it's
 import { ReactiveAggregate } from 'meteor/tunguska:reactive-aggregate';
 
 Meteor.publish('nameOfPublication', function() {
-  ReactiveAggregate(sub, collection, pipeline, options);
+  ReactiveAggregate(context, collection, pipeline, options);
 });
 ```
 
-- `sub` should always be `this` in a publication.
+- `context` should always be `this` in a publication.
 - `collection` is the Mongo.Collection instance to query. To preserve backwards compatibility, an observer is automatically added on this collection, unless `options.noAutomaticObserver` is set to `true`.
 
   The backwards-compatible options `observeSelector` and `observeOptions` are now **deprecated**, but will continue to be honoured on an automatically added observer. However, the recommended approach is to set `options.noAutomaticObserver` to `true` and define your own oberver(s) in `options.observers`. There is no guarantee that deprecated options will continue to be honoured in future releases.
 
 - `pipeline` is the aggregation pipeline to execute.
 - `options` provides further options:
-  - `aggregationOptions` can be used to add further, aggregation-specific options. See [standard aggregation options](http://mongodb.github.io/node-mongodb-native/3.1/api/Collection.html#aggregate) for more information.
+  - `aggregationOptions` can be used to add further, aggregation-specific options. See [standard aggregation options](http://mongodb.github.io/node-mongodb-native/3.1/api/Collection.html#aggregate) for more information. The additional aggregation options shown in this example are not necessarily sane!
+
+    ```js
+      ReactiveAggregate(this, collection, pipeline, {
+        aggregationOptions: { maxTimeMS: 500, bypassDocumentValidation: true },
+      });
+    ```
+
+  - `capturePipeline`: A callback function having one parameter which will return the array of documents comprising the the current pipeline execution. :warning: Use with caution: this callback will be executed each time the pipeline re-runs.
+
+    ```js
+      ReactiveAggregate(this, collection, pipeline, {
+        capturePipeline(docs) {
+          console.log(docs);
+        },
+      });
+    ```
+
   - `clientCollection` defaults to the same name as the original collection, but can be overridden to send the results to a differently named client-side collection.
-  - `noAutomaticObserver`: set this to `true` to prevent the backwards-compatible behaviour of an observer on the given collection.
-  - `observers`: An array of cursors. Each cursor is the result of a `Collection.find()`. Each of the supplied cursors will have an observer attached, so any change detected (based on the selection criteria in the `find`) will re-run the aggregation pipeline.
+
+    ```js
+      ReactiveAggregate(this, collection, pipeline, {
+        clientCollection: "clientCollectionName",
+      });
+    ```
+
   - `debounceCount`: An integer representing the number of observer changes across all observers before the aggregation will be re-run. Defaults to 0 (do not count) for backwards compatibility with the original API. Used in conjunction with `debounceDelay` to fine-tune reactivity. The first of the two debounce options to be reached will re-run the aggregation.
   - `debounceDelay`: An integer representing the maximum number of milli-seconds to wait for observer changes before the aggregation is re-run. Defaults to 0 (do not wait) for backwards compatibility with the original API. Used in conjunction with `debounceCount` to fine-tune reactivity. The first of the two debounce options to be reached will re-run the aggregation.
   - `debug`: A boolean (`true` or `false`), or a callback function having one parameter which will return the `aggregate#cursor.explain()` result. Defaults to `false` (no debugging).
+  - `objectIDKeysToRepair`: An array of SimpleSchema-style dotted path keys to fields of the schema that are Mongo.ObjectIDs. This _is not needed by default_ and _should not be used unless the default behaviour of the code fails in some way_. If your schemas use Mongo.ObjectID or Mongo.Collection.ObjectID as the type for object ids, rather than the Meteor default strings, and the code does not automatically handle your object ids properly (which may happen in rare cases, based on your schemas), then you can specify schema keys here to tell the code that they are Mongo.ObjectIDs as an alternative way to get your schemas to aggregate and return properly typed object ids. For example, if your BlogPosts collection schema has a `parentID` key that contains the object id of a parent post, and it also has a `comments` field that is an array of objects, one field of which, `id`, is a Mongo.ObjectID of a comment document in another collection, then _if your aggregations don't return properly typed Mongo.ObjectIDs in those fields automatically_, you could try providing  ['parentID', 'comments.$.id']. But this is a last resort, and you should expect your aggregations to return Mongo.ObjectID values properly, including the `_id` of your primary collection. Defaults to `[]`.
+  - `noAutomaticObserver`: set this to `true` to prevent the backwards-compatible behaviour of an observer on the given collection.
+  - `observers`: An array of cursors. Each cursor is the result of a `Collection.find()`. Each of the supplied cursors will have an observer attached, so any change detected (based on the selection criteria in the `find`) will re-run the aggregation pipeline.
   - `warnings`: A boolean (`true` or `false`) which controls the logging of warning messages. Defaults to `true` (warning messages are logged).
-  - `objectIDKeysToRepair`: An array of SimpleSchema-style dotted path keys to fields of the schema that are Mongo.ObjectIDs. This _is not needed by default_ and _should not be used unless the default behavior of the code fails in some way_. If your schemas use Mongo.ObjectID or Mongo.Collection.ObjectID as the type for object ids, rather than the Meteor default strings, and the code does not automatically handle your object ids properly (which may happen in rare cases, based on your schemas), then you can specify schema keys here to tell the code that they are Mongo.ObjectIDs as an alternative way to get your schemas to aggregate and return properly typed object ids. For example, if your BlogPosts collection schema has a `parentID` key that contains the object id of a parent post, and it also has a `comments` field that is an array of objects, one field of which, `id`, is a Mongo.ObjectID of a comment document in another collection, then _if your aggregations don't return properly typed Mongo.ObjectIDs in those fields automatically_, you could try providing  ['parentID', 'comments.$.id']. But this is a last resort, and you should expect your aggregations to return Mongo.ObjectID values properly, including the `_id` of your primary collection. Defaults to `[]`.
 
   :hand: The following parameters are **deprecated** and will be removed in a later version. Both these parameters are now effectively absorbed into the `observers` option and if required should be replaced by adding a cursor (or cursors) to the array of cursors in `observers`. Setting either of these to anything other than the empty object `{}` will result in a deprecation notice to the server console (for example: `tunguska:reactive-aggregate: observeSelector is deprecated`).
   - ~~`observeSelector`~~ can be given to improve efficiency. This selector is used for observing the collection.
