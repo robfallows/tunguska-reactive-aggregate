@@ -5,7 +5,7 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
   import { Promise } from 'meteor/promise';
 
   // Define new Meteor Error type
-  const TunguskaReactiveAggregateError = Meteor.makeErrorType('tunguska:reactive-aggregate', function(msg) {
+  const TunguskaReactiveAggregateError = Meteor.makeErrorType('tunguska:reactive-aggregate', function (msg) {
     this.message = msg;
     this.path = '';
     this.sanitizedError = new Meteor.Error('Error', 'tunguska:reactive-aggregate');
@@ -38,7 +38,8 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
       debounceDelay: 0, // mS
       clientCollection: collection._name,
       debug: false,
-      objectIDKeysToRepair: []
+      capturePipeline: false,
+      objectIDKeysToRepair: [],
     },
     ...options
   };
@@ -88,6 +89,9 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
   if (typeof localOptions.debug !== 'function' && localOptions.debug !== true && localOptions.debug !== false) {
     throw new TunguskaReactiveAggregateError('"options.debug" must be a boolean or a callback');
   }
+  if (localOptions.capturePipeline && typeof localOptions.capturePipeline !== 'function') {
+    throw new TunguskaReactiveAggregateError('"options.capturePipeline" must be a callback');
+  }
   if (!(localOptions.objectIDKeysToRepair instanceof Array)) {
     throw new TunguskaReactiveAggregateError('"options.objectIDKeysToRepair" must be an array');
   }
@@ -108,20 +112,20 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
     try { set = require('lodash/set'); }
     catch (e2) {
       let eCombined = { code: `lodash-es(${e.code || e}), lodash(${e2.code || e2})` };
-      packageErrors.push({name:'lodash-es or lodash', error:eCombined});
+      packageErrors.push({ name: 'lodash-es or lodash', error: eCombined });
     }
   }
-  try { _CircDepPreventionSimpleSchema = require('simpl-schema'); } catch (e) { packageErrors.push({name:'simpl-schema',error:e}); }
+  try { _CircDepPreventionSimpleSchema = require('simpl-schema'); } catch (e) { packageErrors.push({ name: 'simpl-schema', error: e }); }
   const isUsingMongoObjectIDSupport = packageErrors.length === 0;
-  if ( !isUsingMongoObjectIDSupport && !_errorsDisplayedOnce ) {
+  if (!isUsingMongoObjectIDSupport && !_errorsDisplayedOnce) {
     if (localOptions.warnings) {
       console.log(`ReactiveAggregate support for Mongo.ObjectID is disabled due to ${packageErrors.length} package error(s):`);
-      packageErrors.forEach( (e,i) => { console.log( `   ${i+1} - ${e.name}: ${e.error.code || e.error}`);});
+      packageErrors.forEach((e, i) => { console.log(`   ${i + 1} - ${e.name}: ${e.error.code || e.error}`); });
     }
     _errorsDisplayedOnce = true;
   }
 
-// observeChanges() will immediately fire an "added" event for each document in the cursor
+  // observeChanges() will immediately fire an "added" event for each document in the cursor
   // these are skipped using the initializing flag
   let initializing = true;
   sub._ids = {};
@@ -132,18 +136,18 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
   // The caller can explicitly provide schema keys, but they have to get them exactly right
   // or they'll be debugging why things aren't working. In (hopefully) nearly all cases,
   // the code here will deduce which keys define ObjectIDs and automatically repair them.
-  if ( isUsingMongoObjectIDSupport && (localOptions.objectIDKeysToRepair.length === 0) ) {
+  if (isUsingMongoObjectIDSupport && (localOptions.objectIDKeysToRepair.length === 0)) {
     // Find the ObjectIDs to repair in the schema,
     // since it's not overridden by specified ones in the options.
-    if ( schema instanceof _CircDepPreventionSimpleSchema.default ) {
+    if (schema instanceof _CircDepPreventionSimpleSchema.default) {
       schemaContext = schema.newContext();
 
       let mergedSchema = schema.mergedSchema();
       Object.entries(mergedSchema).forEach(([key, rawDef]) => {
-        let def = schema.getDefinition( key );
-        for ( let type of def.type ) {
-          if ( type.type === Mongo.ObjectID ) {
-            localOptions.objectIDKeysToRepair.push( key );
+        let def = schema.getDefinition(key);
+        for (let type of def.type) {
+          if (type.type === Mongo.ObjectID) {
+            localOptions.objectIDKeysToRepair.push(key);
             break;
           }
         }
@@ -156,14 +160,14 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
 
   // Use lodash set to mutate the doc by setting the dotted path key to the
   // Mongo.ObjectID format of the object id's value.
-  const repairObjectID = ( doc, key, valueToRepair ) => {
-    if ( valueToRepair instanceof MongoInternals.NpmModule.ObjectID )
-      set( doc, key, new Mongo.ObjectID(valueToRepair.toString()) );
+  const repairObjectID = (doc, key, valueToRepair) => {
+    if (valueToRepair instanceof MongoInternals.NpmModule.ObjectID)
+      set(doc, key, new Mongo.ObjectID(valueToRepair.toString()));
     // This is the very specific case in which a Mongo.ObjectID has gotten run through
     // some BSONifier twice -- converting it the first time to a MongoInternals.NpmModule.ObjectID
     // and the second time from that to a POJO with the id being a Uint8Array.
-    else if ( valueToRepair && (typeof valueToRepair === 'object') && ( valueToRepair.id instanceof Uint8Array ) )
-      set( doc, key, new Mongo.ObjectID(Buffer.from(valueToRepair.id).toString("hex") ) );
+    else if (valueToRepair && (typeof valueToRepair === 'object') && (valueToRepair.id instanceof Uint8Array))
+      set(doc, key, new Mongo.ObjectID(Buffer.from(valueToRepair.id).toString("hex")));
   }
 
   const update = () => {
@@ -190,7 +194,7 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
           // This means it was an ObjectID that got converted by rawCollection() methods
           // that use the underlying MongoDB driver, so convert it back.
           doc_id = doc._id.toString();
-          doc._id = new Mongo.ObjectID( doc_id );
+          doc._id = new Mongo.ObjectID(doc_id);
         } else if (typeof doc._id === 'object') {
           // This is some other kind of object, so leave it as is.
           doc_id = doc._id.toString();
@@ -203,9 +207,9 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
         // If there are keys that should contain Mongo.ObjectIDs, validate them,
         // and if they fail validation because they are the wrong type of object id,
         // repair them back to being Mongo.ObjectIDs.
-        if ( schemaContext && ( localOptions.objectIDKeysToRepair.length > 0 ) ) {
+        if (schemaContext && (localOptions.objectIDKeysToRepair.length > 0)) {
           schemaContext.reset();
-          schemaContext.validate( doc, { keys: localOptions.objectIDKeysToRepair } );
+          schemaContext.validate(doc, { keys: localOptions.objectIDKeysToRepair });
           let validationErrors = schemaContext.validationErrors();
           validationErrors.forEach(error => {
             // error.dataType at this point has been converted to a string, so we can't
@@ -216,11 +220,11 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
             // more than once. But repairObjectID only repairs the specific types
             // that a Mongo.ObjectID gets converted to, so some other unknown
             // ObjectID type won't be repaired.
-            if ( ( error.type === _CircDepPreventionSimpleSchema.default.ErrorTypes.EXPECTED_TYPE ) &&
-                 ( error.dataType === "ObjectID" ) ) {
+            if ((error.type === _CircDepPreventionSimpleSchema.default.ErrorTypes.EXPECTED_TYPE) &&
+              (error.dataType === "ObjectID")) {
               // error.name is the dotted path key to the objectID field.
               // Setting a dotted path element of an object requires code.
-              repairObjectID( doc, error.name, error.value );
+              repairObjectID(doc, error.name, error.value);
             }
 
           });
@@ -235,7 +239,7 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
             const previousFields = [...sub._session.collectionViews.documents.get(localOptions.clientCollection).get(doc_id).dataByKey.keys()];
             previousFields.forEach(field => {
               // At this point they are undefined because they no longer exist in the new doc, they're not literally set as undefined
-              if ( doc[field] === undefined ) {
+              if (doc[field] === undefined) {
                 // We need to explicitly define this as undefined so the sub will remove them.
                 doc[field] = undefined;
               }
@@ -255,9 +259,12 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
       });
       sub._iteration++;
       if (localOptions.debug) console.log(`Reactive-Aggregate: publish: ready`)
+      if (localOptions.capturePipeline) {
+        localOptions.capturePipeline(docs);
+      }
       sub.ready();           // Mark the subscription as ready
     } catch (err) {
-      throw new TunguskaReactiveAggregateError (err.message);
+      throw new TunguskaReactiveAggregateError(err.message);
     }
   }
 
@@ -295,7 +302,7 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
     if (localOptions.debug) console.log(`Reactive-Aggregate: collection: ${name}: initialise observer`)
     handles.push(cursor.observeChanges({
       added(id) {
-        debounce({ name, mutation: 'added', id } );
+        debounce({ name, mutation: 'added', id });
       },
       changed(id) {
         debounce({ name, mutation: 'changed', id });
@@ -304,7 +311,7 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
         debounce({ name, mutation: 'removed', id });
       },
       error(err) {
-        throw new TunguskaReactiveAggregateError (err.message);
+        throw new TunguskaReactiveAggregateError(err.message);
       }
     }));
   });
