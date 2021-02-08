@@ -1,5 +1,9 @@
 # Change History
 
+## v1.3.5 2021-02-08
+
+- The internal observer initialisation is now done asynchronously.
+
 ## v1.3.4 2021-01-06
 
 - Allow capturing of pipeline output with new `options.pipelineCapture` parameter.

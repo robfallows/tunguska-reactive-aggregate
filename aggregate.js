@@ -297,23 +297,25 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
 
   const handles = [];
   // track any changes on the observed cursors
-  localOptions.observers.forEach(cursor => {
-    const name = cursor._cursorDescription.collectionName;
-    if (localOptions.debug) console.log(`Reactive-Aggregate: collection: ${name}: initialise observer`)
-    handles.push(cursor.observeChanges({
-      added(id) {
-        debounce({ name, mutation: 'added', id });
-      },
-      changed(id) {
-        debounce({ name, mutation: 'changed', id });
-      },
-      removed(id) {
-        debounce({ name, mutation: 'removed', id });
-      },
-      error(err) {
-        throw new TunguskaReactiveAggregateError(err.message);
-      }
-    }));
+  Meteor.defer(() => {
+    localOptions.observers.forEach(cursor => {
+      const name = cursor._cursorDescription.collectionName;
+      if (localOptions.debug) console.log(`Reactive-Aggregate: collection: ${name}: initialise observer`)
+      handles.push(cursor.observeChanges({
+        added(id) {
+          debounce({ name, mutation: 'added', id });
+        },
+        changed(id) {
+          debounce({ name, mutation: 'changed', id });
+        },
+        removed(id) {
+          debounce({ name, mutation: 'removed', id });
+        },
+        error(err) {
+          throw new TunguskaReactiveAggregateError(err.message);
+        }
+      }));
+    });
   });
 
   // stop observing the cursors when the client unsubscribes
