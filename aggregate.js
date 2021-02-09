@@ -296,7 +296,9 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
   }
 
   const handles = [];
-  // track any changes on the observed cursors
+  // Track any changes on the observed cursors.
+  // We use Meteor.defer to allow the observer setup to run asynchronously from
+  // the main thread. This improves perceived performance on initial setup.
   Meteor.defer(() => {
     localOptions.observers.forEach(cursor => {
       const name = cursor._cursorDescription.collectionName;
