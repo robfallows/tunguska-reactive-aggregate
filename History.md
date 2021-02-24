@@ -1,8 +1,13 @@
 # Change History
 
+## v1.3.6 2021-02-24
+
+- Remediation release for v1.3.5 bug.
+- Adds some more debug output when using `options.debug: true`.
+
 ## v1.3.5 2021-02-08
 
-- The internal observer initialisation is now done asynchronously.
+- The internal observer initialisation is now done asynchronously. :warning: **Do not use this version**. It has a serious performance bug when a publication is stopped and  restarted. Upgrade to v1.3.6 or downgrade to v1.3.4.
 
 ## v1.3.4 2021-01-06
 

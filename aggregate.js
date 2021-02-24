@@ -173,6 +173,7 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
   const update = () => {
     // add and update documents on the client
     try {
+      if (localOptions.debug) console.log(`Reactive-Aggregate: Running aggregation pipeline`)
       const docs = Promise.await(collection.rawCollection().aggregate(pipeline, localOptions.aggregationOptions).toArray());
       docs.forEach(doc => {
 
@@ -226,7 +227,6 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
               // Setting a dotted path element of an object requires code.
               repairObjectID(doc, error.name, error.value);
             }
-
           });
         }
 
@@ -273,7 +273,7 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
 
   const debounce = (notification) => {
     if (initializing) return;
-    if (localOptions.debug) console.log(`Reactive-Aggregate: collection: ${notification.name}: publish: ${notification.mutation}, _id: ${notification.id}`)
+    if (localOptions.debug) console.log(`Reactive-Aggregate: collection ${notification.name}: publish: ${notification.mutation}, _id: ${notification.id}`)
 
     if (!timer && localOptions.debounceDelay > 0) timer = Meteor.setTimeout(() => {
       update();
@@ -297,27 +297,23 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
 
   const handles = [];
   // Track any changes on the observed cursors.
-  // We use Meteor.defer to allow the observer setup to run asynchronously from
-  // the main thread. This improves perceived performance on initial setup.
-  Meteor.defer(() => {
-    localOptions.observers.forEach(cursor => {
-      const name = cursor._cursorDescription.collectionName;
-      if (localOptions.debug) console.log(`Reactive-Aggregate: collection: ${name}: initialise observer`)
-      handles.push(cursor.observeChanges({
-        added(id) {
-          debounce({ name, mutation: 'added', id });
-        },
-        changed(id) {
-          debounce({ name, mutation: 'changed', id });
-        },
-        removed(id) {
-          debounce({ name, mutation: 'removed', id });
-        },
-        error(err) {
-          throw new TunguskaReactiveAggregateError(err.message);
-        }
-      }));
-    });
+  localOptions.observers.forEach(cursor => {
+    const name = cursor._cursorDescription.collectionName;
+    if (localOptions.debug) console.log(`Reactive-Aggregate: collection ${name}: initialise observers`)
+    handles.push(cursor.observeChanges({
+      added(id) {
+        debounce({ name, mutation: 'added', id });
+      },
+      changed(id) {
+        debounce({ name, mutation: 'changed', id });
+      },
+      removed(id) {
+        debounce({ name, mutation: 'removed', id });
+      },
+      error(err) {
+        throw new TunguskaReactiveAggregateError(err.message);
+      }
+    }));
   });
 
   // stop observing the cursors when the client unsubscribes
