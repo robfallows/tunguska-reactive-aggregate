@@ -186,6 +186,11 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
             _ids coming from an aggregation pipeline may be anything or nothing!
         */
 
+        // Run optional transform function to make further changes on doc before sending it to client.
+        if (options.hasOwnProperty("transform")) {
+          options.transform(doc);
+        }
+
         let doc_id;
         if (!doc._id) { // missing or otherwise falsy
           throw new TunguskaReactiveAggregateError('every aggregation document must have an _id');
