@@ -1,5 +1,10 @@
 # Change History
 
+## v1.3.7 2022-01-18
+
+- Fixing unset issue due to Meteor updating clientCollection to be Map instead of Object
+- Ref: meteor/meteor@79ae184#diff-173e69ea0353a765b98017d67abc45ec7ce1449178466dc74738324db83f9183
+
 ## v1.3.6 2021-02-24
 
 - Remediation release for v1.3.5 bug.
