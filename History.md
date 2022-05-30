@@ -1,5 +1,9 @@
 # Change History
 
+## v1.3.8 2022-05-30
+
+- Added options.objectIdWarnings https://github.com/robfallows/tunguska-reactive-aggregate/pull/65
+
 ## v1.3.7 2022-01-18
 
 - Fixing unset issue due to Meteor updating clientCollection to be Map instead of Object
