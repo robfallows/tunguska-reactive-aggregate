@@ -30,7 +30,6 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
     ...{
       noAutomaticObserver: false,
       warnings: true,
-      objectIdWarnings: true,
       aggregationOptions: {},
       observeSelector: {},
       observeOptions: {},
@@ -42,7 +41,8 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
       capturePipeline: false,
       objectIDKeysToRepair: [],
     },
-    ...options
+    ...options,
+    specificWarnings: { deprecations:true, objectId:true, ...((options.specificWarnings instanceof Object) ? options.specificWarnings : {}) },
   };
 
   // Check options
@@ -52,8 +52,8 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
   if (typeof localOptions.warnings !== 'boolean') {
     throw new TunguskaReactiveAggregateError('"options.warnings" must be true or false');
   }
-  if (typeof localOptions.objectIdWarnings !== 'boolean') {
-    throw new TunguskaReactiveAggregateError('"options.objectIdWarnings" must be true or false');
+  for (const [name,value] of Object.entries(options.specificWarnings)) {
+    if (typeof value !== 'boolean') throw new TunguskaReactiveAggregateError(`"options.specificWarnings.${name}" must be true or false`);
   }
   if (typeof localOptions.observeSelector !== 'object') {
     throw new TunguskaReactiveAggregateError('deprecated "options.observeSelector" must be an object');
@@ -100,8 +100,10 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
     throw new TunguskaReactiveAggregateError('"options.objectIDKeysToRepair" must be an array');
   }
 
+  const { specificWarnings } = localOptions;
+
   // Warn about deprecated parameters if used
-  if (localOptions.warnings) {
+  if (localOptions.warnings && specificWarnings.deprecations) {
     if (Object.keys(localOptions.observeSelector).length !== 0) console.log('tunguska:reactive-aggregate: observeSelector is deprecated');
     if (Object.keys(localOptions.observeOptions).length !== 0) console.log('tunguska:reactive-aggregate: observeOptions is deprecated');
   }
@@ -122,7 +124,7 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
   try { _CircDepPreventionSimpleSchema = require('simpl-schema'); } catch (e) { packageErrors.push({ name: 'simpl-schema', error: e }); }
   const isUsingMongoObjectIDSupport = packageErrors.length === 0;
   if (!isUsingMongoObjectIDSupport && !_errorsDisplayedOnce) {
-    if (localOptions.warnings && localOptions.objectIdWarnings) {
+    if (localOptions.warnings && specificWarnings.objectId) {
       console.log(`ReactiveAggregate support for Mongo.ObjectID is disabled due to ${packageErrors.length} package error(s):`);
       packageErrors.forEach((e, i) => { console.log(`   ${i + 1} - ${e.name}: ${e.error.code || e.error}`); });
     }
