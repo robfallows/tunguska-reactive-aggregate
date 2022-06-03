@@ -20,7 +20,7 @@ This helper can be used to reactively publish the results of an aggregation.
 
 ## Mongo.ObjectID support
 
-If your collections use the Meteor default of String for MongoDB document ids, you can skip this section and may want to set `options.specificWarnings.objectId = false`
+If your collections use the Meteor default of String for MongoDB document ids, you can skip this section and may want to set `options.specificWarnings.objectId = false` and `options.loadObjectIdModules = false`
 
 However, if you use the Mongo.ObjectID type for document ids, full support for handling Mongo.ObjectIDs is only enabled if `simpl-schema` and either `lodash-es` or `lodash` are installed. For backward compatibility, they are not required. (Only the `set` functionality of `lodash-es`/`lodash` is imported, if you're concerned about the full package bloating your code size).
 
@@ -83,6 +83,7 @@ Meteor.publish('nameOfPublication', function() {
   - `objectIDKeysToRepair`: An array of SimpleSchema-style dotted path keys to fields of the schema that are Mongo.ObjectIDs. This _is not needed by default_ and _should not be used unless the default behaviour of the code fails in some way_. If your schemas use Mongo.ObjectID or Mongo.Collection.ObjectID as the type for object ids, rather than the Meteor default strings, and the code does not automatically handle your object ids properly (which may happen in rare cases, based on your schemas), then you can specify schema keys here to tell the code that they are Mongo.ObjectIDs as an alternative way to get your schemas to aggregate and return properly typed object ids. For example, if your BlogPosts collection schema has a `parentID` key that contains the object id of a parent post, and it also has a `comments` field that is an array of objects, one field of which, `id`, is a Mongo.ObjectID of a comment document in another collection, then _if your aggregations don't return properly typed Mongo.ObjectIDs in those fields automatically_, you could try providing  ['parentID', 'comments.$.id']. But this is a last resort, and you should expect your aggregations to return Mongo.ObjectID values properly, including the `_id` of your primary collection. Defaults to `[]`.
   - `noAutomaticObserver`: set this to `true` to prevent the backwards-compatible behaviour of an observer on the given collection.
   - `observers`: An array of cursors. Each cursor is the result of a `Collection.find()`. Each of the supplied cursors will have an observer attached, so any change detected (based on the selection criteria in the `find`) will re-run the aggregation pipeline.
+  - `loadObjectIdModules`: A boolean (`true` or `false`) that if true, tries to load modules necessary for ObjectId support. Defaults to `true`.
   - `warnings`: A boolean (`true` or `false`) that if false, suppresses all warnings, regardless of any specificWarnings. Defaults to `true` (warning messages are logged).
   - `specificWarnings` object, allows you to suppress specific types of warnings: (they all default to `true`, warning messages are logged)
     - `deprecations`: Warnings about deprecations.
