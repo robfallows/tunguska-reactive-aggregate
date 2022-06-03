@@ -40,6 +40,7 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
       debug: false,
       capturePipeline: false,
       objectIDKeysToRepair: [],
+      loadObjectIdModules: true,
     },
     ...options,
     specificWarnings: { deprecations:true, objectId:true, ...((options.specificWarnings instanceof Object) ? options.specificWarnings : {}) },
@@ -99,6 +100,9 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
   if (!(localOptions.objectIDKeysToRepair instanceof Array)) {
     throw new TunguskaReactiveAggregateError('"options.objectIDKeysToRepair" must be an array');
   }
+  if (typeof localOptions.loadObjectIdModules !== 'boolean') {
+    throw new TunguskaReactiveAggregateError('"options.loadObjectIdModules" must be true or false');
+  }
 
   const { specificWarnings } = localOptions;
 
@@ -112,23 +116,29 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
   // will still work (without Mongo.ObjectID support) if they aren't loaded.
   // Also, prefer lodash-es over lodash, but accept either.
   const packageErrors = [];
-  let set = null, _CircDepPreventionSimpleSchema = null;
-  try { set = require('lodash-es/set'); }
-  catch (e) {
-    try { set = require('lodash/set'); }
-    catch (e2) {
-      let eCombined = { code: `lodash-es(${e.code || e}), lodash(${e2.code || e2})` };
-      packageErrors.push({ name: 'lodash-es or lodash', error: eCombined });
+  if (localOptions.loadObjectIdModules) {
+    let set = null, _CircDepPreventionSimpleSchema = null;
+    try { set = require('lodash-es/set'); }
+    catch (e) {
+      try { set = require('lodash/set'); }
+      catch (e2) {
+        let eCombined = { code: `lodash-es(${e.code || e}), lodash(${e2.code || e2})` };
+        packageErrors.push({ name: 'lodash-es or lodash', error: eCombined });
+      }
     }
+    try { _CircDepPreventionSimpleSchema = require('simpl-schema'); } catch (e) { packageErrors.push({ name: 'simpl-schema', error: e }); }
   }
-  try { _CircDepPreventionSimpleSchema = require('simpl-schema'); } catch (e) { packageErrors.push({ name: 'simpl-schema', error: e }); }
-  const isUsingMongoObjectIDSupport = packageErrors.length === 0;
-  if (!isUsingMongoObjectIDSupport && !_errorsDisplayedOnce) {
-    if (localOptions.warnings && specificWarnings.objectId) {
-      console.log(`ReactiveAggregate support for Mongo.ObjectID is disabled due to ${packageErrors.length} package error(s):`);
-      packageErrors.forEach((e, i) => { console.log(`   ${i + 1} - ${e.name}: ${e.error.code || e.error}`); });
+
+  const loadedObjectIdModules = localOptions.loadObjectIdModules && packageErrors.length === 0;
+
+  if (localOptions.loadObjectIdModules) {
+    if (!loadedObjectIdModules && !_errorsDisplayedOnce) {
+      if (localOptions.warnings && specificWarnings.objectId) {
+        console.log(`ReactiveAggregate support for Mongo.ObjectID is disabled due to ${packageErrors.length} package error(s):`);
+        packageErrors.forEach((e, i) => { console.log(`   ${i + 1} - ${e.name}: ${e.error.code || e.error}`); });
+      }
+      _errorsDisplayedOnce = true;
     }
-    _errorsDisplayedOnce = true;
   }
 
   // observeChanges() will immediately fire an "added" event for each document in the cursor
@@ -142,7 +152,7 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
   // The caller can explicitly provide schema keys, but they have to get them exactly right
   // or they'll be debugging why things aren't working. In (hopefully) nearly all cases,
   // the code here will deduce which keys define ObjectIDs and automatically repair them.
-  if (isUsingMongoObjectIDSupport && (localOptions.objectIDKeysToRepair.length === 0)) {
+  if (loadedObjectIdModules && (localOptions.objectIDKeysToRepair.length === 0)) {
     // Find the ObjectIDs to repair in the schema,
     // since it's not overridden by specified ones in the options.
     if (schema instanceof _CircDepPreventionSimpleSchema.default) {
