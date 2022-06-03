@@ -131,14 +131,12 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
 
   const loadedObjectIdModules = localOptions.loadObjectIdModules && packageErrors.length === 0;
 
-  if (localOptions.loadObjectIdModules) {
-    if (!loadedObjectIdModules && !_errorsDisplayedOnce) {
-      if (localOptions.warnings && specificWarnings.objectId) {
-        console.log(`ReactiveAggregate support for Mongo.ObjectID is disabled due to ${packageErrors.length} package error(s):`);
-        packageErrors.forEach((e, i) => { console.log(`   ${i + 1} - ${e.name}: ${e.error.code || e.error}`); });
-      }
-      _errorsDisplayedOnce = true;
+  if (localOptions.loadObjectIdModules && !loadedObjectIdModules && !_errorsDisplayedOnce) {
+    if (localOptions.warnings && specificWarnings.objectId) {
+      console.log(`ReactiveAggregate support for Mongo.ObjectID is disabled due to ${packageErrors.length} package error(s):`);
+      packageErrors.forEach((e, i) => { console.log(`   ${i + 1} - ${e.name}: ${e.error.code || e.error}`); });
     }
+    _errorsDisplayedOnce = true;
   }
 
   // observeChanges() will immediately fire an "added" event for each document in the cursor
