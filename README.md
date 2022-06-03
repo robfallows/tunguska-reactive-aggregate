@@ -85,7 +85,7 @@ Meteor.publish('nameOfPublication', function() {
   - `observers`: An array of cursors. Each cursor is the result of a `Collection.find()`. Each of the supplied cursors will have an observer attached, so any change detected (based on the selection criteria in the `find`) will re-run the aggregation pipeline.
   - `warnings`: A boolean (`true` or `false`) that if false, suppresses all warnings, regardless of any specificWarnings. Defaults to `true` (warning messages are logged).
   - `specificWarnings` object, allows you to suppress specific types of warnings: (they all default to `true`, warning messages are logged)
-    - `deprecations`: warnings about deprecations.
+    - `deprecations`: Warnings about deprecations.
     - `objectId`: Warnings related to ObjectID and dependencies for using it.
 
   :hand: The following parameters are **deprecated** and will be removed in a later version. Both these parameters are now effectively absorbed into the `observers` option and if required should be replaced by adding a cursor (or cursors) to the array of cursors in `observers`. Setting either of these to anything other than the empty object `{}` will result in a deprecation notice to the server console (for example: `tunguska:reactive-aggregate: observeSelector is deprecated`).
