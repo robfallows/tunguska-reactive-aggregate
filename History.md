@@ -1,6 +1,6 @@
 # Change History
 
-## v1.3.8 2022-06-03
+## v1.3.8 2022-06-06
 
 - Added [options.specificWarnings](https://github.com/robfallows/tunguska-reactive-aggregate/pull/65)
 
