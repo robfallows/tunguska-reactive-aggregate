@@ -1,6 +1,6 @@
 Package.describe({
   name: 'tunguska:reactive-aggregate',
-  version: '1.3.8',
+  version: '1.3.9',
   summary: 'Publish aggregations reactively',
   git: 'https://github.com/robfallows/tunguska-reactive-aggregate',
   documentation: 'README.md'
