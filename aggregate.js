@@ -250,7 +250,9 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
         } else {
           if (sub._session.collectionViews instanceof Map) {
             // Since the pipeline fields might have been removed, we need to find the differences and define them as 'undefined' so the sub removes them.
-            const previousFields = [...sub._session.collectionViews.get(localOptions.clientCollection).documents.get(doc_id).dataByKey.keys()];
+
+            const previousDocs = sub._session.collectionViews.get(localOptions.clientCollection).documents;
+            const previousFields = [previousDocs && previousDocs.get(doc_id).dataByKey.keys()];
             previousFields.forEach(field => {
               // At this point they are undefined because they no longer exist in the new doc, they're not literally set as undefined
               if (doc[field] === undefined) {
