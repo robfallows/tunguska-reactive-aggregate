@@ -53,7 +53,7 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
   if (typeof localOptions.warnings !== 'boolean') {
     throw new TunguskaReactiveAggregateError('"options.warnings" must be true or false');
   }
-  for (const [name,value] of Object.entries(options.specificWarnings)) {
+  for (const [name,value] of Object.entries(localOptions.specificWarnings)) {
     if (typeof value !== 'boolean') throw new TunguskaReactiveAggregateError(`"options.specificWarnings.${name}" must be true or false`);
   }
   if (typeof localOptions.observeSelector !== 'object') {
