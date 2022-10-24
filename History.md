@@ -1,5 +1,9 @@
 # Change History
 
+## v1.3.9 2022-10-24
+
+- Fixed issue with `_CircDepPreventionSimpleSchema` being undefined [Moved _CircDepPreventionSimpleSchema out of scope](https://github.com/robfallows/tunguska-reactive-aggregate/pull/71)
+
 ## v1.3.8 2022-06-06
 
 - Added [options.specificWarnings](https://github.com/robfallows/tunguska-reactive-aggregate/pull/65)
