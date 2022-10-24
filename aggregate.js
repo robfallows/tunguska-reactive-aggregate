@@ -116,8 +116,9 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
   // will still work (without Mongo.ObjectID support) if they aren't loaded.
   // Also, prefer lodash-es over lodash, but accept either.
   const packageErrors = [];
+  let _CircDepPreventionSimpleSchema = null;
   if (localOptions.loadObjectIdModules) {
-    let set = null, _CircDepPreventionSimpleSchema = null;
+    let set = null;
     try { set = require('lodash-es/set'); }
     catch (e) {
       try { set = require('lodash/set'); }
