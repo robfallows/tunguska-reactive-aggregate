@@ -1,5 +1,9 @@
 # Change History
 
+## v1.3.10 2022-10-25
+
+- Fixed issue [Aggregation with $lookup](https://github.com/robfallows/tunguska-reactive-aggregate/issues/68) by using localOptions instead of options
+
 ## v1.3.9 2022-10-24
 
 - Fixed issue with `_CircDepPreventionSimpleSchema` being undefined [Moved _CircDepPreventionSimpleSchema out of scope](https://github.com/robfallows/tunguska-reactive-aggregate/pull/71)
