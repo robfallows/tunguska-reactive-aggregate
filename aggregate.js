@@ -1,8 +1,8 @@
+import { Meteor } from 'meteor/meteor';
+import { Mongo } from 'meteor/mongo';
+
 let _errorsDisplayedOnce = false;
 export const ReactiveAggregate = async (sub, collection = null, pipeline = [], options = {}) => {
-  import { Meteor } from 'meteor/meteor';
-  import { Mongo } from 'meteor/mongo';
-  import { Promise } from 'meteor/promise';
 
   // Define new Meteor Error type
   const TunguskaReactiveAggregateError = Meteor.makeErrorType('tunguska:reactive-aggregate', function (msg) {
