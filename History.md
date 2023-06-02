@@ -1,5 +1,11 @@
 # Change History
 
+## v1.3.11 2023-05-30
+
+- Fixed issues:
+  - [Cannot read property 'dataByKey' of undefined](https://github.com/robfallows/tunguska-reactive-aggregate/issues/74).
+  - [Exception in changedobserveChanges callback: Error: Cannot read property 'documents' of undefined](https://github.com/robfallows/tunguska-reactive-aggregate/issues/73).
+
 ## v1.3.10 2022-10-25
 
 - Fixed issue [Aggregation with $lookup](https://github.com/robfallows/tunguska-reactive-aggregate/issues/68) by using localOptions instead of options
