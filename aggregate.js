@@ -337,6 +337,7 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
     handles.forEach(handle => {
       handle.stop();
     });
+    Meteor.clearTimeout(timer);
   });
   // End of the setup phase. We don't need to do any of that again!
 
