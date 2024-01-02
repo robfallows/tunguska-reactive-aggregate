@@ -1,5 +1,9 @@
 # Change History
 
+## v1.3.12 2024-01-02
+
+- Cleanup the debounce timer when the subscription is stopped. This fixes error "Cannot read property 'documents' of undefined" reported [here](https://github.com/robfallows/tunguska-reactive-aggregate/issues/73) and [here](https://github.com/robfallows/tunguska-reactive-aggregate/issues/76)
+
 ## v1.3.11 2023-05-30
 
 - Fixed issues:
