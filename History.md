@@ -1,11 +1,13 @@
 # Change History
 
+## v1.3.14 2024-03-04
+
+- Fixes a [regression issue](https://github.com/robfallows/tunguska-reactive-aggregate/issues/80).
 
 ## v1.3.13 2024-02-05
 
 - Fixed errors being thrown when unsetting if documents do not exist as well as when using NO_MERGE publications strategy with client-only collection
 - Ref: https://github.com/robfallows/tunguska-reactive-aggregate/issues/61
-
 
 ## v1.3.12 2024-01-02
 
