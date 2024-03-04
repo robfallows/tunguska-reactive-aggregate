@@ -1,5 +1,11 @@
 # Change History
 
+## v1.3.15 2024-03-04
+
+- Fixes error when removing non-existing documents from collection
+- Support for multiple ReactiveAggregates per subscription
+- Ref https://github.com/robfallows/tunguska-reactive-aggregate/issues/76
+
 ## v1.3.14 2024-03-04
 
 - Fixes a [regression issue](https://github.com/robfallows/tunguska-reactive-aggregate/issues/80).

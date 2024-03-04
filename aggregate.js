@@ -269,8 +269,12 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
       // remove documents not in the result anymore
       Object.keys(sub._ids).forEach(id => {
         if (sub._ids[id] !== sub._iteration) {
-          delete sub._ids[id];
-          sub.removed(localOptions.clientCollection, id);
+          // as we might have multiple client-only aggregates per subscription, with different ids of the same collection
+          // ensure we only remove docs from the actual Collection passed in the aggregation
+          if (sub._session.collectionViews.get(localOptions.clientCollection)?.documents.has(id)) {
+            delete sub._ids[id];
+            sub.removed(key, id);
+          }
         }
       });
       sub._iteration++;

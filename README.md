@@ -1,4 +1,4 @@
-# tunguska-reactive-aggregate v1.3.14
+# tunguska-reactive-aggregate v1.3.15
 
 Reactively publish aggregations.
 
