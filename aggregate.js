@@ -306,7 +306,7 @@ export const ReactiveAggregate = async (sub, collection = null, pipeline = [], o
   }
 
   if (!localOptions.noAutomaticObserver) {
-    const cursor = collection.find(localOptions.observeSelector, localOptions.observeOptions);
+    const cursor = await collection.find(localOptions.observeSelector, localOptions.observeOptions);
     localOptions.observers.push(cursor);
   }
 
