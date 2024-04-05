@@ -273,7 +273,7 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
           // ensure we only remove docs from the actual Collection passed in the aggregation
           if (sub._session.collectionViews.get(localOptions.clientCollection)?.documents.has(id)) {
             delete sub._ids[id];
-            sub.removed(key, id);
+            sub.removed(localOptions.clientCollection, id);
           }
         }
       });
