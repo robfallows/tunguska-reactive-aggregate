@@ -1,5 +1,9 @@
 # Change History
 
+## v1.3.16 2024-04-05
+
+- Fixes (regression) error when documents are removed from collection
+
 ## v1.3.15 2024-03-04
 
 - Fixes error when removing non-existing documents from collection
