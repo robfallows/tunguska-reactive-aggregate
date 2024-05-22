@@ -7,7 +7,7 @@ Package.describe({
 });
 
 Package.onUse(function(api) {
-  api.versionsFrom('2.14');
+  api.versionsFrom(['3.0-rc.1']);
   api.use('mongo');
   api.use('ecmascript');
   api.mainModule('aggregate.js', 'server');
