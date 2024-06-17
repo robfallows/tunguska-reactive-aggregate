@@ -273,8 +273,8 @@ export const ReactiveAggregate = async (sub, collection = null, pipeline = [], o
           // as we might have multiple client-only aggregates per subscription, with different ids of the same collection
           // ensure we only remove docs from the actual Collection passed in the aggregation
           if (sub._session.collectionViews.get(localOptions.clientCollection)?.documents.has(id)) {
-          delete sub._ids[id];
-          sub.removed(localOptions.clientCollection, id);
+            delete sub._ids[id];
+            sub.removed(localOptions.clientCollection, id);
           }
         }
       });
