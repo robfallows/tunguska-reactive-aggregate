@@ -1,8 +1,9 @@
 let _errorsDisplayedOnce = false;
-export const ReactiveAggregate = (sub, collection = null, pipeline = [], options = {}) => {
-  import { Meteor } from 'meteor/meteor';
-  import { Mongo } from 'meteor/mongo';
-  import { Promise } from 'meteor/promise';
+
+import { Meteor } from 'meteor/meteor';
+import { Mongo } from 'meteor/mongo';
+
+export const ReactiveAggregate = async (sub, collection = null, pipeline = [], options = {}) => {
 
   // Define new Meteor Error type
   const TunguskaReactiveAggregateError = Meteor.makeErrorType('tunguska:reactive-aggregate', function (msg) {
@@ -185,11 +186,11 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
       set(doc, key, new Mongo.ObjectID(Buffer.from(valueToRepair.id).toString("hex")));
   }
 
-  const update = () => {
+  const update = async () => {
     // add and update documents on the client
     try {
       if (localOptions.debug) console.log(`Reactive-Aggregate: Running aggregation pipeline`)
-      const docs = Promise.await(collection.rawCollection().aggregate(pipeline, localOptions.aggregationOptions).toArray());
+      const docs = await collection.rawCollection().aggregate(pipeline, localOptions.aggregationOptions).toArray()
       docs.forEach(doc => {
 
         /*  _ids are complicated:
@@ -272,8 +273,8 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
           // as we might have multiple client-only aggregates per subscription, with different ids of the same collection
           // ensure we only remove docs from the actual Collection passed in the aggregation
           if (sub._session.collectionViews.get(localOptions.clientCollection)?.documents.has(id)) {
-            delete sub._ids[id];
-            sub.removed(localOptions.clientCollection, id);
+          delete sub._ids[id];
+          sub.removed(localOptions.clientCollection, id);
           }
         }
       });
@@ -317,10 +318,10 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
 
   const handles = [];
   // Track any changes on the observed cursors.
-  localOptions.observers.forEach(cursor => {
+  for (const cursor of localOptions.observers) {
     const name = cursor._cursorDescription.collectionName;
     if (localOptions.debug) console.log(`Reactive-Aggregate: collection ${name}: initialise observers`)
-    handles.push(cursor.observeChanges({
+    handles.push(await cursor.observeChangesAsync({
       added(id) {
         debounce({ name, mutation: 'added', id });
       },
@@ -334,7 +335,7 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
         throw new TunguskaReactiveAggregateError(err.message);
       }
     }));
-  });
+  };
 
   // stop observing the cursors when the client unsubscribes
   sub.onStop(() => {
@@ -347,11 +348,9 @@ export const ReactiveAggregate = (sub, collection = null, pipeline = [], options
   // End of the setup phase. We don't need to do any of that again!
 
   if (typeof localOptions.debug === 'function') {
-    const explain = Promise.await(collection.rawCollection().aggregate(pipeline, localOptions.aggregationOptions).explain());
-    localOptions.debug(explain);
+    localOptions.debug(await collection.rawCollection().aggregate(pipeline, localOptions.aggregationOptions).explain())
   }
 
   initializing = false;  // Clear the initializing flag. From here, we're on autopilot
-  update();              // Send an initial result set to the client
-
+  await update();              // Send an initial result set to the client
 };
