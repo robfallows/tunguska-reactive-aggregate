@@ -1,5 +1,9 @@
 # Change History
 
+## v2.0.0 TBD
+
+- BREAKING: Move to async API to support Meteor 3. Make sure to `await ReactiveAggregate` inside publication.
+
 ## v1.3.16 2024-04-05
 
 - Fixes (regression) error when documents are removed from collection
