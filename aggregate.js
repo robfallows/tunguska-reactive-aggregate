@@ -251,7 +251,8 @@ export const ReactiveAggregate = async (sub, collection = null, pipeline = [], o
         } else {
           if (sub._session.collectionViews instanceof Map) {
             // Since the pipeline fields might have been removed, we need to find the differences and define them as 'undefined' so the sub removes them.
-            const previousFields = [...sub._session.collectionViews.get(localOptions.clientCollection).documents?.get?.(doc_id)?.dataByKey?.keys?.()];
+            const previousDocs = sub._session.collectionViews.get(localOptions.clientCollection)?.documents;
+            const previousFields = [previousDocs && previousDocs.get(doc_id)?.dataByKey?.keys()];
             previousFields.forEach(field => {
               if (doc[field] === undefined) {
                 // At this point they are undefined because they no longer exist in the new doc, they're not literally set as undefined
@@ -268,8 +269,12 @@ export const ReactiveAggregate = async (sub, collection = null, pipeline = [], o
       // remove documents not in the result anymore
       Object.keys(sub._ids).forEach(id => {
         if (sub._ids[id] !== sub._iteration) {
-          delete sub._ids[id];
-          sub.removed(localOptions.clientCollection, id);
+          // as we might have multiple client-only aggregates per subscription, with different ids of the same collection
+          // ensure we only remove docs from the actual Collection passed in the aggregation
+          if (sub._session.collectionViews.get(localOptions.clientCollection)?.documents.has(id)) {
+            delete sub._ids[id];
+            sub.removed(localOptions.clientCollection, id);
+          }
         }
       });
       sub._iteration++;
@@ -337,6 +342,7 @@ export const ReactiveAggregate = async (sub, collection = null, pipeline = [], o
     handles.forEach(handle => {
       handle.stop();
     });
+    Meteor.clearTimeout(timer);
   });
   // End of the setup phase. We don't need to do any of that again!
 
