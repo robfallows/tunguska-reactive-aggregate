@@ -18,8 +18,8 @@ export const ReactiveAggregate = async (sub, collection = null, pipeline = [], o
   if (!(collection instanceof Mongo.Collection)) {
     throw new TunguskaReactiveAggregateError('"collection" must be a Mongo.Collection');
   }
-  if (!(pipeline instanceof Array)) {
-    throw new TunguskaReactiveAggregateError('"pipeline" must be an array');
+  if (!(pipeline instanceof Array || typeof pipeline === 'function')) {
+    throw new TunguskaReactiveAggregateError('"pipeline" must be an array or a function');
   }
   if (!(options instanceof Object)) {
     throw new TunguskaReactiveAggregateError('"options" must be an object');
@@ -189,7 +189,12 @@ export const ReactiveAggregate = async (sub, collection = null, pipeline = [], o
     // add and update documents on the client
     try {
       if (localOptions.debug) console.log(`Reactive-Aggregate: Running aggregation pipeline`)
-      const docs = await collection.rawCollection().aggregate(pipeline, localOptions.aggregationOptions).toArray();
+      if (typeof pipeline === 'function') {
+        thePipeline = await pipeline();
+      } else {
+        thePipeline = pipeline;
+      }
+      const docs = await collection.rawCollection().aggregate(thePipeline, localOptions.aggregationOptions).toArray();
       docs.forEach(doc => {
 
         /*  _ids are complicated:
