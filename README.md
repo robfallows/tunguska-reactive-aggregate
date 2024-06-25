@@ -49,7 +49,7 @@ Meteor.publish('nameOfPublication', function() {
 
   The backwards-compatible options `observeSelector` and `observeOptions` are now **deprecated**, but will continue to be honoured on an automatically added observer. However, the recommended approach is to set `options.noAutomaticObserver` to `true` and define your own oberver(s) in `options.observers`. There is no guarantee that deprecated options will continue to be honoured in future releases.
 
-- `pipeline` is the aggregation pipeline to execute.
+- `pipeline` is the aggregation pipeline to execute or a function that returns the aggregation pipeline. If a function is provided, it will be called before updates triggered by the observers. 
 - `options` provides further options:
   - `aggregationOptions` can be used to add further, aggregation-specific options. See [standard aggregation options](http://mongodb.github.io/node-mongodb-native/3.1/api/Collection.html#aggregate) for more information. The additional aggregation options shown in this example are not necessarily sane!
 
