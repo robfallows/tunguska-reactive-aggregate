@@ -1,5 +1,10 @@
 # Change History
 
+## v2.0.0 2024-06-25
+
+- Make code asynchronous.
+- Allow pipeline parameter to be a function returning the pipeline. The pipeline will then be generated anew on each update triggered by observer changes.
+
 ## v1.3.16 2024-04-05
 
 - Fixes (regression) error when documents are removed from collection
