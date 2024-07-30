@@ -322,10 +322,10 @@ export const ReactiveAggregate = async (sub, collection = null, pipeline = [], o
 
   const handles = [];
   // Track any changes on the observed cursors.
-  localOptions.observers.forEach(cursor => {
+  for (const cursor of localOptions.observers) {
     const name = cursor._cursorDescription.collectionName;
     if (localOptions.debug) console.log(`Reactive-Aggregate: collection ${name}: initialise observers`)
-    handles.push(cursor.observeChanges({
+    handles.push(await cursor.observeChangesAsync({
       async added(id) {
         await debounce({ name, mutation: 'added', id });
       },
@@ -339,7 +339,7 @@ export const ReactiveAggregate = async (sub, collection = null, pipeline = [], o
         throw new TunguskaReactiveAggregateError(err.message);
       }
     }));
-  });
+  }
 
   // stop observing the cursors when the client unsubscribes
   sub.onStop(() => {

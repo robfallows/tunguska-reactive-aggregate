@@ -1,5 +1,9 @@
 # Change History
 
+## v2.0.1 2024-07-30
+
+- Fix how observers are created.
+
 ## v2.0.0 2024-06-25
 
 - Make code asynchronous.
