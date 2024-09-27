@@ -1,4 +1,19 @@
-# tunguska-reactive-aggregate v1.3.15
+# tunguska-reactive-aggregate
+Versions and recent changes
+
+## Meteor 3.x
+Use tunguska-reactive-aggregate v2.0.1
+
+* Observers creation fix
+* Added pipeline function parameter
+* Made code async
+
+## Meteor 2.x
+Use tunguska-reactive-aggregate v1.3.16
+
+* v1.3.16 fixes error when documents get removed from collection
+
+## About
 
 Reactively publish aggregations.
 
