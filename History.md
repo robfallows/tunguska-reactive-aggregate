@@ -1,5 +1,9 @@
 # Change History
 
+## v2.0.2 2025-02-20
+
+- Fix reference to `MongoInternals.NpmModule.ObjectId` (was using `ObjectID` and failing).
+
 ## v2.0.1 2024-07-30
 
 - Fix how observers are created.

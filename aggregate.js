@@ -211,7 +211,7 @@ export const ReactiveAggregate = async (sub, collection = null, pipeline = [], o
           throw new TunguskaReactiveAggregateError('every aggregation document must have an _id');
         } else if (doc._id instanceof Mongo.ObjectID) {
           doc_id = doc._id.toHexString();
-        } else if (doc._id instanceof MongoInternals.NpmModule.ObjectID) {
+        } else if (doc._id instanceof MongoInternals.NpmModule.ObjectId) {
           // This means it was an ObjectID that got converted by rawCollection() methods
           // that use the underlying MongoDB driver, so convert it back.
           doc_id = doc._id.toString();
